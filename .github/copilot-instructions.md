@@ -54,10 +54,15 @@ Project-specific guidance for GitHub Copilot. Keep this file updated as the code
   - <item>
 
 ## Copilot Behavior Preferences
-- **Do**: <short directives>
-- **Avoid**: <short directives>
-- **Testing**: <when to run tests>
-- **Tooling**: <allowed tools>
+- **Do**: Prefer Nuxt 4 + Vue 3 idioms, Composition API, and TypeScript types.
+- **Do**: Keep OpenAI Responses API calls in server routes or server utilities.
+- **Do**: Show a loading/progress UI state while awaiting responses.
+- **Do**: Use `runtimeConfig` for secrets; read `OPENAI_API_KEY` from `.env`.
+- **Do**: Keep UI minimal and accessible; include clear error states for failed calls.
+- **Avoid**: Exposing secrets in client code or logs.
+- **Avoid**: Adding heavy dependencies unless necessary.
+- **Testing**: Use Vitest for unit tests; prefer targeted tests for new logic.
+- **Tooling**: Use Nuxt CLI and Vite defaults unless otherwise specified.
 
 ## Notes for This Repo
 - <any repo-specific guidance>
