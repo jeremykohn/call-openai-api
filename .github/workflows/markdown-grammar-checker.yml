@@ -39,3 +39,26 @@ jobs:
           vale_flags: --glob=*.md
           reporter: local
           fail_on_error: true
+
+  languagetool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Download LanguageTool
+        run: |
+          curl -L -o languagetool.zip https://languagetool.org/download/LanguageTool-6.4.zip
+          unzip -q languagetool.zip
+      - name: Run LanguageTool
+        run: |
+          files=$(git ls-files '*.md')
+          if [ -n "$files" ]; then
+            java -jar LanguageTool-*/languagetool-commandline.jar --language en-US $files
+          else
+            echo "No Markdown files found."
+          fi
