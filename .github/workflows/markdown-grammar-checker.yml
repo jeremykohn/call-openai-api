@@ -27,7 +27,3 @@ jobs:
         with:
           file-pattern: '**.md'
           exclude-pattern: '**/node-modules/**, **/vendor/**'
-
-
-
-          
