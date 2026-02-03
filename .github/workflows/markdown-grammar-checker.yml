@@ -7,24 +7,17 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check-grammar:
-    # The type of runner that the job will run on
+  write-good:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check grammar
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Install write-good
         run: npm install -g write-good
-
       - name: Run write-good
         run: |
           files=$(git ls-files '*.md')
