@@ -26,3 +26,16 @@ jobs:
           else
             echo "No Markdown files found."
           fi
+
+  vale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Vale
+        uses: errata-ai/vale-action@v2.1.1
+        with:
+          files: .
+          vale_flags: --glob=*.md
+          reporter: local
+          fail_on_error: true
