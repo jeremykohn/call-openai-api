@@ -58,7 +58,12 @@ jobs:
         run: |
           files=$(git ls-files '*.md')
           if [ -n "$files" ]; then
-            java -jar LanguageTool-*/languagetool-commandline.jar --language en-US $files
+            java -jar LanguageTool-*/languagetool-commandline.jar \
+              --language en-US \
+              # Limit to grammar issues by disabling style/typography and typo-based checks.
+              --disablecategories STYLE,TYPOGRAPHY,TYPOS \
+              --disable MORFOLOGIK_RULE_EN_US \
+              $files
           else
             echo "No Markdown files found."
           fi
