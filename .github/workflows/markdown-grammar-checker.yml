@@ -73,7 +73,7 @@ jobs:
         with:
           node-version: 20
       - name: Install textlint
-        run: npm install -g textlint textlint-rule-english
+        run: npm install -g textlint textlint-rule-ginger
       - name: Run textlint
         run: |
           files=$(git ls-files '*.md')
