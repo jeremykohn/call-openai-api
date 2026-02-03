@@ -2,11 +2,6 @@ name: Check Markdown Grammar
 
 # Controls when the workflow will run
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths: 
-      - '**.md'
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -23,7 +18,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check grammar
-        uses: Haimantika/article-review-github-action@v1.1.1
+        uses: actions/setup-node@v4
         with:
-          file-pattern: '**.md'
-          exclude-pattern: '**/node-modules/**, **/vendor/**'
+          node-version: 20
+
+      - name: Install write-good
+        run: npm install -g write-good
+
+      - name: Run write-good
+        run: |
+          files=$(git ls-files '*.md')
+          if [ -n "$files" ]; then
+            write-good $files
+          else
+            echo "No Markdown files found."
+          fi
