@@ -62,3 +62,23 @@ jobs:
           else
             echo "No Markdown files found."
           fi
+
+  textlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install textlint
+        run: npm install -g textlint textlint-rule-english
+      - name: Run textlint
+        run: |
+          files=$(git ls-files '*.md')
+          if [ -n "$files" ]; then
+            textlint -c .textlintrc.json $files
+          else
+            echo "No Markdown files found."
+          fi
