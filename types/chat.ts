@@ -27,4 +27,5 @@ export type RequestState = {
   status: RequestStatus;
   data: string | null;
   error: string | null;
+  errorDetails: string | null;
 };

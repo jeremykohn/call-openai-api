@@ -44,6 +44,9 @@
         <div v-else-if="state.status === 'error'" class="status-row error" role="alert">
           <h2>Something went wrong</h2>
           <p>{{ state.error }}</p>
+          <p v-if="state.errorDetails" class="error-details">
+            <strong>Details:</strong> {{ state.errorDetails }}
+          </p>
         </div>
       </section>
     </main>
@@ -85,18 +88,16 @@ const handleSubmit = async () => {
   try {
     const response = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
-      body: { prompt: validation.prompt },
-      throwOnError: true
+      body: { prompt: validation.prompt }
     });
 
     succeed(response.response || "");
   } catch (error) {
     const apiError = error as { data?: ApiErrorResponse };
     const message = apiError.data?.message ?? "Request failed.";
-    const details = apiError.data?.details;
-    const combined = details ? `${message} ${details}` : message;
+    const details = apiError.data?.details ?? (error instanceof Error ? error.message : undefined);
 
-    fail(combined);
+    fail(message, details);
   }
 };
 </script>
