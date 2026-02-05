@@ -134,6 +134,11 @@ a:focus-visible {
   color: #b91c1c;
 }
 
+.error-details {
+  margin: 0;
+  color: #7f1d1d;
+}
+
 .spinner {
   width: 1.5rem;
   height: 1.5rem;

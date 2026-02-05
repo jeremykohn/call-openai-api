@@ -4,7 +4,7 @@ import { useRuntimeConfig } from "nitropack/runtime";
 import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "../../types/chat";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 
-const OPENAI_PATH = "/responses";
+const OPENAI_PATH = "responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 
 type OpenAIResponse = {
@@ -12,6 +12,15 @@ type OpenAIResponse = {
   output?: Array<{
     content?: Array<{ text?: string }>;
   }>;
+};
+
+type OpenAIErrorPayload = {
+  error?: {
+    message?: string;
+    type?: string;
+    code?: string;
+    param?: string;
+  };
 };
 
 const extractOutputText = (response: OpenAIResponse): string => {
@@ -42,7 +51,14 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const response = await fetch(new URL(OPENAI_PATH, baseUrl).toString(), {
+    const requestUrl = (() => {
+      const url = new URL(baseUrl);
+      const normalizedPath = url.pathname.replace(/\/$/, "");
+      url.pathname = `${normalizedPath}/${OPENAI_PATH}`;
+      return url.toString();
+    })();
+
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -54,15 +70,36 @@ export default defineEventHandler(async (event: H3Event) => {
       })
     });
 
-    const payload = (await response.json().catch(() => ({}))) as OpenAIResponse & {
-      error?: { message?: string };
-    };
+    const rawBody = await response.text();
+    let payload: OpenAIResponse & OpenAIErrorPayload = {};
+
+    if (rawBody) {
+      try {
+        payload = JSON.parse(rawBody) as OpenAIResponse & OpenAIErrorPayload;
+      } catch {
+        payload = {};
+      }
+    }
 
     if (!response.ok) {
+      const requestId =
+        response.headers.get("x-request-id") ?? response.headers.get("x-openai-request-id");
+      const errorMessage = payload.error?.message;
+      const detailParts = [
+        errorMessage,
+        payload.error?.type ? `type: ${payload.error.type}` : undefined,
+        payload.error?.code ? `code: ${payload.error.code}` : undefined,
+        payload.error?.param ? `param: ${payload.error.param}` : undefined,
+        response.status ? `status: ${response.status}` : undefined,
+        response.statusText ? `statusText: ${response.statusText}` : undefined,
+        requestId ? `requestId: ${requestId}` : undefined,
+        !errorMessage && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined
+      ].filter(Boolean);
+
       setResponseStatus(event, response.status || 500);
       return {
         message: "Request to OpenAI failed.",
-        details: payload.error?.message
+        details: detailParts.length ? detailParts.join(" | ") : undefined
       } satisfies ApiErrorResponse;
     }
 

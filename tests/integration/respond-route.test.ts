@@ -93,7 +93,8 @@ describe("POST /api/respond", () => {
       const message = fetchError.data?.message ?? fetchError.statusMessage;
 
       expect(message).toBe("Request to OpenAI failed.");
-      expect(fetchError.data?.details).toBe("Invalid API key");
+      expect(fetchError.data?.details).toContain("Invalid API key");
+      expect(fetchError.data?.details).toContain("status: 401");
       expect(fetchError.statusCode ?? fetchError.status).toBe(401);
     }
   });

@@ -2,7 +2,12 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-const buildWrapper = async (state: { status: string; data: string | null; error: string | null }) => {
+const buildWrapper = async (state: {
+  status: string;
+  data: string | null;
+  error: string | null;
+  errorDetails: string | null;
+}) => {
   vi.resetModules();
   vi.doMock("../../app/composables/use-request-state", () => ({
     useRequestState: () => ({
@@ -28,22 +33,38 @@ describe("App UI states", () => {
   });
 
   it("renders the loading state", async () => {
-    const wrapper = await buildWrapper({ status: "loading", data: null, error: null });
+    const wrapper = await buildWrapper({
+      status: "loading",
+      data: null,
+      error: null,
+      errorDetails: null
+    });
 
     expect(wrapper.text()).toContain("Waiting for response from ChatGPT...");
   });
 
   it("renders the success state", async () => {
-    const wrapper = await buildWrapper({ status: "success", data: "Hello", error: null });
+    const wrapper = await buildWrapper({
+      status: "success",
+      data: "Hello",
+      error: null,
+      errorDetails: null
+    });
 
     expect(wrapper.text()).toContain("Response");
     expect(wrapper.text()).toContain("Hello");
   });
 
   it("renders the error state", async () => {
-    const wrapper = await buildWrapper({ status: "error", data: null, error: "Oops" });
+    const wrapper = await buildWrapper({
+      status: "error",
+      data: null,
+      error: "Oops",
+      errorDetails: "Details here"
+    });
 
     expect(wrapper.text()).toContain("Something went wrong");
     expect(wrapper.text()).toContain("Oops");
+    expect(wrapper.text()).toContain("Details here");
   });
 });
