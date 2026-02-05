@@ -7,29 +7,83 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check-grammar:
-    # The type of runner that the job will run on
+  write-good:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Check grammar
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Install write-good
         run: npm install -g write-good
-
       - name: Run write-good
         run: |
           files=$(git ls-files '*.md')
           if [ -n "$files" ]; then
             write-good $files
+          else
+            echo "No Markdown files found."
+          fi
+
+  vale:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run Vale
+        uses: errata-ai/vale-action@v2.1.1
+        with:
+          files: .
+          vale_flags: --glob=*.md
+          reporter: local
+          fail_on_error: true
+
+  languagetool:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Download LanguageTool
+        run: |
+          curl -L -o languagetool.zip https://languagetool.org/download/LanguageTool-6.4.zip
+          unzip -q languagetool.zip
+      - name: Run LanguageTool
+        run: |
+          files=$(git ls-files '*.md')
+          if [ -n "$files" ]; then
+            # Limit to grammar issues by disabling style/typography and typo-based checks.
+            java -jar LanguageTool-*/languagetool-commandline.jar \
+              --language en-US \
+              --disablecategories STYLE,TYPOGRAPHY,TYPOS \
+              --disable MORFOLOGIK_RULE_EN_US \
+              $files
+          else
+            echo "No Markdown files found."
+          fi
+
+  textlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install textlint
+        run: npm install -g textlint textlint-rule-ginger
+      - name: Run textlint
+        run: |
+          files=$(git ls-files '*.md')
+          if [ -n "$files" ]; then
+            textlint -c .textlintrc.json $files
           else
             echo "No Markdown files found."
           fi
