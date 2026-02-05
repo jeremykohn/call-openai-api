@@ -2,7 +2,7 @@
 import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
-  compatibilityDate: "2026-02-04",
+  compatibilityDate: "2026-02-05",
   nitro: {
     preset: "vercel"
   },
