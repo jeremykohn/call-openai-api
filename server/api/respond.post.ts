@@ -4,7 +4,7 @@ import { useRuntimeConfig } from "nitropack/runtime";
 import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "../../types/chat";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 
-const OPENAI_PATH = "/responses";
+const OPENAI_PATH = "responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 
 type OpenAIResponse = {
