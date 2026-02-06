@@ -43,5 +43,6 @@ test("shows an error message when the API fails", async ({ page }) => {
   await requestPromise;
 
   await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
-  await expect(page.getByText("Request to OpenAI failed. Server unavailable")).toBeVisible();
+  await expect(page.getByText("Request to OpenAI failed.")).toBeVisible();
+  await expect(page.getByText("Server unavailable")).toBeVisible();
 });
