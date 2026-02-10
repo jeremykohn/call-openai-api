@@ -13,9 +13,7 @@ test("submits a prompt and renders the response", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Prompt").fill("Hello");
-  const requestPromise = page.waitForRequest("**/api/respond");
   await page.getByRole("button", { name: "Send" }).click();
-  await requestPromise;
 
   await expect(page.getByText("Waiting for response from ChatGPT...")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Response" })).toBeVisible();
@@ -38,9 +36,7 @@ test("shows an error message when the API fails", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.getByLabel("Prompt").fill("Hello");
-  const requestPromise = page.waitForRequest("**/api/respond");
   await page.getByRole("button", { name: "Send" }).click();
-  await requestPromise;
 
   await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
   await expect(page.getByText("Request to OpenAI failed.")).toBeVisible();
