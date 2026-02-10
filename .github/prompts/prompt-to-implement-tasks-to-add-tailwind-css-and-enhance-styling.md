@@ -1,0 +1,1 @@
+Start implementing the tasks from tasks-to-add-tailwind-css-and-enhance-styling.md in the .github directory.
