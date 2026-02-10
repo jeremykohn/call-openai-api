@@ -3,6 +3,7 @@ import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-02-05",
+  modules: ["@nuxtjs/tailwindcss"],
   nitro: {
     preset: "vercel"
   },

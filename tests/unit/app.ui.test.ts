@@ -32,6 +32,19 @@ describe("App UI states", () => {
     vi.stubGlobal("$fetch", vi.fn());
   });
 
+  it("applies Tailwind layout classes to the app container", async () => {
+    const wrapper = await buildWrapper({
+      status: "idle",
+      data: null,
+      error: null,
+      errorDetails: null
+    });
+
+    const container = wrapper.find(".page");
+    expect(container.exists()).toBe(true);
+    expect(container.classes()).toContain("min-h-screen");
+  });
+
   it("renders the loading state", async () => {
     const wrapper = await buildWrapper({
       status: "loading",
@@ -66,5 +79,20 @@ describe("App UI states", () => {
     expect(wrapper.text()).toContain("Something went wrong");
     expect(wrapper.text()).toContain("Oops");
     expect(wrapper.text()).toContain("Details here");
+  });
+
+  it("includes focus-visible styles on primary actions", async () => {
+    const wrapper = await buildWrapper({
+      status: "idle",
+      data: null,
+      error: null,
+      errorDetails: null
+    });
+
+    const button = wrapper.get("button[type='submit']");
+    expect(button.classes()).toContain("focus-visible:outline");
+
+    const termsLink = wrapper.get("a[href='https://openai.com/policies/terms-of-use/']");
+    expect(termsLink.classes()).toContain("focus-visible:outline");
   });
 });

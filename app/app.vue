@@ -1,19 +1,30 @@
 <template>
-  <div class="page">
-    <header class="site-header">
-      <a class="skip-link" href="#maincontent">Skip to main</a>
-      <h1>ChatGPT prompt tester</h1>
-      <p>Send a prompt and see the response.</p>
+  <div class="page min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900">
+    <header class="px-6 pb-8 pt-12 text-center">
+      <a
+        class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-white"
+        href="#maincontent"
+      >
+        Skip to main
+      </a>
+      <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">ChatGPT prompt tester</h1>
+      <p class="mx-auto mt-3 max-w-xl text-base text-slate-600 sm:text-lg">
+        Send a prompt and see the response.
+      </p>
     </header>
 
-    <main id="maincontent" class="main">
-      <form class="prompt-form" novalidate @submit.prevent="handleSubmit">
-        <label class="field-label" for="prompt-input">Prompt</label>
+    <main id="maincontent" class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 pb-14">
+      <form
+        class="grid gap-4 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-lg shadow-slate-200/50 backdrop-blur"
+        novalidate
+        @submit.prevent="handleSubmit"
+      >
+        <label class="text-sm font-semibold text-slate-700" for="prompt-input">Prompt</label>
         <textarea
           id="prompt-input"
           ref="promptInput"
           v-model="prompt"
-          class="prompt-input"
+          class="min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           name="prompt"
           rows="5"
           required
@@ -21,41 +32,58 @@
           :aria-invalid="validationError ? 'true' : 'false'"
           :aria-describedby="validationError ? 'prompt-error' : undefined"
         ></textarea>
-        <p v-if="validationError" id="prompt-error" class="field-error" role="alert">
+        <p v-if="validationError" id="prompt-error" class="text-sm text-red-700" role="alert">
           {{ validationError }}
         </p>
 
-        <button class="submit-button" type="submit" :aria-busy="state.status === 'loading'">
+        <button
+          class="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          type="submit"
+          :aria-busy="state.status === 'loading'"
+        >
           Send
         </button>
       </form>
 
-      <section class="status" aria-live="polite" aria-atomic="true">
-        <div v-if="state.status === 'loading'" class="status-row">
-          <span class="spinner" aria-hidden="true"></span>
-          <span>Waiting for response from ChatGPT...</span>
+      <section class="grid gap-4" aria-live="polite" aria-atomic="true">
+        <div
+          v-if="state.status === 'loading'"
+          class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-6 text-slate-700 shadow-sm"
+        >
+          <span class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" aria-hidden="true"></span>
+          <span class="text-sm font-medium">Waiting for response from ChatGPT...</span>
         </div>
 
-        <div v-else-if="state.status === 'success'" class="status-row">
-          <h2>Response</h2>
-          <p class="response-text">{{ state.data }}</p>
+        <div
+          v-else-if="state.status === 'success'"
+          class="grid gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-6 text-emerald-900 shadow-sm"
+        >
+          <h2 class="text-lg font-semibold">Response</h2>
+          <p class="whitespace-pre-wrap text-sm text-emerald-900">
+            {{ state.data }}
+          </p>
         </div>
 
-        <div v-else-if="state.status === 'error'" class="status-row error" role="alert">
-          <h2>Something went wrong</h2>
-          <p>{{ state.error }}</p>
-          <p v-if="state.errorDetails" class="error-details">
-            <strong>Details:</strong> {{ state.errorDetails }}
+        <div
+          v-else-if="state.status === 'error'"
+          class="grid gap-3 rounded-2xl border border-red-200 bg-red-50/80 p-6 text-red-900 shadow-sm"
+          role="alert"
+        >
+          <h2 class="text-lg font-semibold">Something went wrong</h2>
+          <p class="text-sm text-red-800">{{ state.error }}</p>
+          <p v-if="state.errorDetails" class="text-sm text-red-700">
+            <span class="font-semibold">Details:</span> {{ state.errorDetails }}
           </p>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <p>
+    <footer class="mt-6 border-t border-slate-200 bg-white/80 px-6 py-6 text-center text-sm text-slate-600">
+      <p class="mx-auto max-w-3xl">
         By messaging ChatGPT, an AI chatbot, you agree to its
-        <a href="https://openai.com/policies/terms-of-use/">Terms</a> and have read its
-        <a href="https://openai.com/policies/privacy-policy/">Privacy Policy</a>.
+        <a class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500" href="https://openai.com/policies/terms-of-use/">Terms</a>
+        and have read its
+        <a class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500" href="https://openai.com/policies/privacy-policy/">Privacy Policy</a>.
       </p>
     </footer>
   </div>
