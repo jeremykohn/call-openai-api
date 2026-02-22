@@ -191,7 +191,7 @@ The new section appears between the chat form and the status area (loading/respo
 - Verify the models section appears after app load
 - Verify loading spinner displays
 - Verify models list or error message displays correctly
-- (Optional) Test with network failures or timeouts
+- Test with network failures or timeouts
 
 ---
 
