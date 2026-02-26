@@ -125,13 +125,14 @@ describe("GET /api/models", () => {
       ]
     };
 
-    const result = await $fetch<{ data: Array<{ id: string; created: number; owned_by: string }> }>(
+    const result = await $fetch<{ data: Array<{ id: string; object: "model"; created: number; owned_by: string }> }>(
       "/api/models"
     );
 
     expect(result.data).toHaveLength(2);
     expect(result.data[0]).toEqual({
       id: "gpt-test-1",
+      object: "model",
       created: 1686935002,
       owned_by: "openai"
     });

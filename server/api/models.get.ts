@@ -113,6 +113,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const models = (payload.data ?? []).map(({ id, created, owned_by }) => ({
       id,
+      object: "model" as const,
       created,
       owned_by
     }));

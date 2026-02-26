@@ -7,7 +7,7 @@ export type OpenAIModel = {
 
 export type ModelsResponse = {
   object: "list";
-  data: OpenAIModel[];
+  data: OpenAIModel[] | ReadonlyArray<OpenAIModel>;
 };
 
 export type ModelsErrorResponse = {

@@ -6,7 +6,7 @@ import type { OpenAIModel, ModelsErrorResponse } from "../../types/models";
  */
 type ModelsState = {
   status: "idle" | "loading" | "success" | "error";
-  data: OpenAIModel[] | null;
+  data: OpenAIModel[] | ReadonlyArray<OpenAIModel> | null;
   error: string | null;
   errorDetails: string | null;
 };

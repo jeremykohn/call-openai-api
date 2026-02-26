@@ -9,9 +9,9 @@ import type { OpenAIModel } from "../../types/models";
  */
 describe("ModelsSelector Component", () => {
   const mockModels: OpenAIModel[] = [
-    { id: "gpt-4", created: 1686935002, owned_by: "openai" },
-    { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
-    { id: "text-davinci-003", created: 1669599635, owned_by: "openai" }
+    { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
+    { id: "gpt-3.5-turbo", object: "model", created: 1677649963, owned_by: "openai" },
+    { id: "text-davinci-003", object: "model", created: 1669599635, owned_by: "openai" }
   ];
 
   beforeEach(() => {
@@ -51,9 +51,10 @@ describe("ModelsSelector Component", () => {
       expect(options).toHaveLength(mockModels.length + 1);
 
       mockModels.forEach((model, index) => {
-        const option = options[index + 1];
-        expect(option.attributes("value")).toBe(model.id);
-        expect(option.text()).toContain(model.id);
+        const option = options.at(index + 1);
+        expect(option).toBeDefined();
+        expect(option?.attributes("value")).toBe(model.id);
+        expect(option?.text()).toContain(model.id);
       });
     });
 
@@ -67,7 +68,8 @@ describe("ModelsSelector Component", () => {
       });
 
       const select = wrapper.find("[data-testid='models-select']");
-      expect(select.element.value).toBe("gpt-3.5-turbo");
+      const selectElement = select.element as HTMLSelectElement;
+      expect(selectElement.value).toBe("gpt-3.5-turbo");
     });
 
     it("displays placeholder text when no model is selected", () => {
@@ -80,9 +82,10 @@ describe("ModelsSelector Component", () => {
       });
 
       const options = wrapper.findAll("option");
-      const placeholderOption = options[0];
-      expect(placeholderOption.attributes("value")).toBe("");
-      expect(placeholderOption.text()).toContain("Select a model");
+      const placeholderOption = options.at(0);
+      expect(placeholderOption).toBeDefined();
+      expect(placeholderOption?.attributes("value")).toBe("");
+      expect(placeholderOption?.text()).toContain("Select a model");
     });
   });
 
@@ -233,8 +236,9 @@ describe("ModelsSelector Component", () => {
       const select = wrapper.find("[data-testid='models-select']");
       await select.setValue("gpt-3.5-turbo");
 
-      expect(wrapper.emitted("update:selectedModelId")).toBeTruthy();
-      expect(wrapper.emitted("update:selectedModelId")[0]).toEqual(["gpt-3.5-turbo"]);
+      const updateEmitted = wrapper.emitted("update:selectedModelId");
+      expect(updateEmitted).toBeTruthy();
+      expect(updateEmitted?.[0]).toEqual(["gpt-3.5-turbo"]);
     });
 
     it("emits model-selected event with full model object", async () => {
@@ -249,10 +253,11 @@ describe("ModelsSelector Component", () => {
       const select = wrapper.find("[data-testid='models-select']");
       await select.setValue("gpt-3.5-turbo");
 
-      expect(wrapper.emitted("model-selected")).toBeTruthy();
-      const emittedModel = wrapper.emitted("model-selected")[0][0];
-      expect(emittedModel.id).toBe("gpt-3.5-turbo");
-      expect(emittedModel.created).toBe(1677649963);
+      const modelSelectedEmitted = wrapper.emitted("model-selected");
+      expect(modelSelectedEmitted).toBeTruthy();
+      const emittedModel = modelSelectedEmitted?.[0]?.[0] as OpenAIModel | undefined;
+      expect(emittedModel?.id).toBe("gpt-3.5-turbo");
+      expect(emittedModel?.created).toBe(1677649963);
     });
 
     it("does not emit events when select is disabled (error state)", async () => {
@@ -359,12 +364,15 @@ describe("ModelsSelector Component", () => {
       const options = wrapper.findAll("option");
       // Only placeholder option
       expect(options).toHaveLength(1);
-      expect(options[0].text()).toContain("No models available");
+      const noModelsOption = options.at(0);
+      expect(noModelsOption).toBeDefined();
+      expect(noModelsOption?.text()).toContain("No models available");
     });
 
     it("handles very long model names gracefully", () => {
       const longNameModel: OpenAIModel = {
         id: "this-is-an-extremely-long-model-name-that-might-break-the-ui-if-not-handled-properly",
+        object: "model",
         created: 1686935002,
         owned_by: "openai"
       };
@@ -377,13 +385,15 @@ describe("ModelsSelector Component", () => {
         }
       });
 
-      const option = wrapper.findAll("option")[1];
-      expect(option.text()).toContain(longNameModel.id);
+      const option = wrapper.findAll("option").at(1);
+      expect(option).toBeDefined();
+      expect(option?.text()).toContain(longNameModel.id);
     });
 
     it("handles models with special characters in id", () => {
       const specialCharModel: OpenAIModel = {
         id: "model-v1.0_beta+release",
+        object: "model",
         created: 1686935002,
         owned_by: "openai"
       };
@@ -397,7 +407,8 @@ describe("ModelsSelector Component", () => {
       });
 
       const select = wrapper.find("[data-testid='models-select']");
-      expect(select.element.value).toBe("model-v1.0_beta+release");
+      const selectElement = select.element as HTMLSelectElement;
+      expect(selectElement.value).toBe("model-v1.0_beta+release");
     });
   });
 });
