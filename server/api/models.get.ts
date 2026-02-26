@@ -1,7 +1,11 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type { ModelsErrorResponse, ModelsResponse, OpenAIModel } from "../../types/models";
+import type {
+  ModelsErrorResponse,
+  ModelsResponse,
+  OpenAIModel,
+} from "../../types/models";
 
 const OPENAI_PATH = "models";
 
@@ -46,7 +50,9 @@ const sanitizeDetails = (details: string, apiKey: string | null): string => {
 
   const escapedKey = apiKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const keyPattern = new RegExp(escapedKey, "g");
-  return details.replace(keyPattern, "[redacted]").replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
+  return details
+    .replace(keyPattern, "[redacted]")
+    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 };
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -57,12 +63,16 @@ export default defineEventHandler(async (event: H3Event) => {
 
   if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
     setResponseStatus(event, 500);
-    return { message: "OpenAI base URL is not allowed." } satisfies ModelsErrorResponse;
+    return {
+      message: "OpenAI base URL is not allowed.",
+    } satisfies ModelsErrorResponse;
   }
 
   if (!apiKey) {
     setResponseStatus(event, 500);
-    return { message: "OpenAI API key is not configured." } satisfies ModelsErrorResponse;
+    return {
+      message: "OpenAI API key is not configured.",
+    } satisfies ModelsErrorResponse;
   }
 
   try {
@@ -71,8 +81,8 @@ export default defineEventHandler(async (event: H3Event) => {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
 
     const rawBody = await response.text();
@@ -88,7 +98,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     if (!response.ok) {
       const requestId =
-        response.headers.get("x-request-id") ?? response.headers.get("x-openai-request-id");
+        response.headers.get("x-request-id") ??
+        response.headers.get("x-openai-request-id");
       const detailParts = [
         payload.error?.message,
         payload.error?.type ? `type: ${payload.error.type}` : undefined,
@@ -97,7 +108,9 @@ export default defineEventHandler(async (event: H3Event) => {
         response.status ? `status: ${response.status}` : undefined,
         response.statusText ? `statusText: ${response.statusText}` : undefined,
         requestId ? `requestId: ${requestId}` : undefined,
-        !payload.error?.message && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined
+        !payload.error?.message && rawBody
+          ? `response: ${rawBody.slice(0, 300)}`
+          : undefined,
       ].filter(Boolean);
 
       const details = detailParts.length
@@ -107,7 +120,7 @@ export default defineEventHandler(async (event: H3Event) => {
       setResponseStatus(event, response.status || 500);
       return {
         message: "Error: Failed API call, could not get list of OpenAI models",
-        details
+        details,
       } satisfies ModelsErrorResponse;
     }
 
@@ -115,7 +128,7 @@ export default defineEventHandler(async (event: H3Event) => {
       id,
       object: "model" as const,
       created,
-      owned_by
+      owned_by,
     }));
 
     return { data: models } satisfies Pick<ModelsResponse, "data">;
@@ -124,7 +137,7 @@ export default defineEventHandler(async (event: H3Event) => {
     setResponseStatus(event, 500);
     return {
       message: "Error: Failed API call, could not get list of OpenAI models",
-      details: sanitizeDetails(detailText, apiKey)
+      details: sanitizeDetails(detailText, apiKey),
     } satisfies ModelsErrorResponse;
   }
 });

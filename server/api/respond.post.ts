@@ -1,7 +1,11 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "../../types/chat";
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  PromptRequest,
+} from "../../types/chat";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 
 const OPENAI_PATH = "responses";
@@ -39,7 +43,10 @@ const isAllowedHost = (baseUrl: string, allowedHosts: string[]): boolean => {
   }
 };
 
-const sanitizeDetails = (details: string, apiKey: string | undefined): string => {
+const sanitizeDetails = (
+  details: string,
+  apiKey: string | undefined,
+): string => {
   if (!apiKey) {
     return details.replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
   }
@@ -76,12 +83,16 @@ export default defineEventHandler(async (event: H3Event) => {
 
   if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
     setResponseStatus(event, 500);
-    return { message: "OpenAI base URL is not allowed." } satisfies ApiErrorResponse;
+    return {
+      message: "OpenAI base URL is not allowed.",
+    } satisfies ApiErrorResponse;
   }
 
   if (!apiKey) {
     setResponseStatus(event, 500);
-    return { message: "OpenAI API key is not configured." } satisfies ApiErrorResponse;
+    return {
+      message: "OpenAI API key is not configured.",
+    } satisfies ApiErrorResponse;
   }
 
   try {
@@ -96,12 +107,12 @@ export default defineEventHandler(async (event: H3Event) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: DEFAULT_MODEL,
-        input: validation.prompt
-      })
+        input: validation.prompt,
+      }),
     });
 
     const rawBody = await response.text();
@@ -117,7 +128,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     if (!response.ok) {
       const requestId =
-        response.headers.get("x-request-id") ?? response.headers.get("x-openai-request-id");
+        response.headers.get("x-request-id") ??
+        response.headers.get("x-openai-request-id");
       const errorMessage = payload.error?.message;
       const detailParts = [
         errorMessage,
@@ -127,7 +139,9 @@ export default defineEventHandler(async (event: H3Event) => {
         response.status ? `status: ${response.status}` : undefined,
         response.statusText ? `statusText: ${response.statusText}` : undefined,
         requestId ? `requestId: ${requestId}` : undefined,
-        !errorMessage && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined
+        !errorMessage && rawBody
+          ? `response: ${rawBody.slice(0, 300)}`
+          : undefined,
       ].filter(Boolean);
 
       const details = detailParts.length
@@ -137,14 +151,14 @@ export default defineEventHandler(async (event: H3Event) => {
       setResponseStatus(event, response.status || 500);
       return {
         message: "Request to OpenAI failed.",
-        details
+        details,
       } satisfies ApiErrorResponse;
     }
 
     const text = extractOutputText(payload);
 
     const result: ApiSuccessResponse = {
-      response: text
+      response: text,
     };
 
     return result;
@@ -155,7 +169,7 @@ export default defineEventHandler(async (event: H3Event) => {
     setResponseStatus(event, 500);
     return {
       message: "Request to OpenAI failed.",
-      details
+      details,
     } satisfies ApiErrorResponse;
   }
 });

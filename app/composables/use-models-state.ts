@@ -27,17 +27,17 @@ type UseModelsStateReturn = {
 
 /**
  * Composable for managing OpenAI models list state.
- * 
+ *
  * Handles fetching the list of available models from the `/api/models` endpoint
  * and manages the state transitions (idle → loading → success/error).
- * 
+ *
  * Fetch is automatically triggered when the composable is initialized.
- * 
+ *
  * @returns Object containing reactive state, fetchModels function, and computed flags
  * @example
  * ```ts
  * const { state, fetchModels, isLoading, hasError } = useModelsState();
- * 
+ *
  * if (state.value.status === 'success') {
  *   console.log('Models:', state.value.data);
  * }
@@ -48,7 +48,7 @@ export const useModelsState = (): UseModelsStateReturn => {
     status: "loading", // Start as loading since fetch is triggered immediately
     data: null,
     error: null,
-    errorDetails: null
+    errorDetails: null,
   });
 
   /**
@@ -65,7 +65,7 @@ export const useModelsState = (): UseModelsStateReturn => {
    * Fetches the models list from the server API.
    * Updates state to "loading" immediately, then transitions to "success" or "error"
    * based on the API response.
-   * 
+   *
    * @throws Will not throw; errors are captured in state.error instead.
    */
   const fetchModels = async (): Promise<void> => {
@@ -84,9 +84,10 @@ export const useModelsState = (): UseModelsStateReturn => {
       state.value.status = "error";
       state.value.data = null;
 
-      const apiError = typeof error === "object" && error !== null
-        ? (error as { data?: ModelsErrorResponse; message?: string })
-        : undefined;
+      const apiError =
+        typeof error === "object" && error !== null
+          ? (error as { data?: ModelsErrorResponse; message?: string })
+          : undefined;
 
       const messageFromApi = apiError?.data?.message ?? apiError?.message;
       const detailsFromApi = apiError?.data?.details ?? null;
@@ -111,6 +112,6 @@ export const useModelsState = (): UseModelsStateReturn => {
     state: readonly(state),
     fetchModels,
     isLoading: readonly(isLoading),
-    hasError: readonly(hasError)
+    hasError: readonly(hasError),
   };
 };

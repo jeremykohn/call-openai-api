@@ -13,8 +13,8 @@ describe("useModelsState", () => {
   it("auto-fetches models on initialization and transitions to loading state", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       data: [
-        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel
-      ]
+        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
+      ],
     });
     vi.stubGlobal("$fetch", mockFetch);
 
@@ -22,10 +22,10 @@ describe("useModelsState", () => {
 
     // Initial status should be "loading" because fetch is triggered immediately
     expect(state.value.status).toBe("loading");
-    
+
     // Wait for the async fetch to complete
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     expect(state.value.status).toBe("success");
     expect(state.value.data).toHaveLength(1);
   });
@@ -33,8 +33,8 @@ describe("useModelsState", () => {
   it("status transitions to loading when fetch is called", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       data: [
-        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel
-      ]
+        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
+      ],
     });
     vi.stubGlobal("$fetch", mockFetch);
 
@@ -48,7 +48,7 @@ describe("useModelsState", () => {
 
   it("status transitions to success with data when API succeeds", async () => {
     const mockData = [
-      { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel
+      { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
     ];
     const mockFetch = vi.fn().mockResolvedValue({ data: mockData });
     vi.stubGlobal("$fetch", mockFetch);
@@ -79,7 +79,7 @@ describe("useModelsState", () => {
   it("error state includes both message and details", async () => {
     const mockFetch = vi.fn().mockRejectedValue({
       statusCode: 401,
-      data: { message: "Unauthorized", details: "Invalid API key" }
+      data: { message: "Unauthorized", details: "Invalid API key" },
     });
     vi.stubGlobal("$fetch", mockFetch);
 
@@ -101,8 +101,8 @@ describe("useModelsState", () => {
     // First fetch - success
     mockFetch.mockResolvedValueOnce({
       data: [
-        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel
-      ]
+        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
+      ],
     });
     await fetchModels();
     expect(state.value.status).toBe("success");
@@ -117,8 +117,12 @@ describe("useModelsState", () => {
     // Third fetch - success again
     mockFetch.mockResolvedValueOnce({
       data: [
-        { id: "gpt-3.5", created: 1686935003, owned_by: "openai" } as OpenAIModel
-      ]
+        {
+          id: "gpt-3.5",
+          created: 1686935003,
+          owned_by: "openai",
+        } as OpenAIModel,
+      ],
     });
     await fetchModels();
     expect(state.value.status).toBe("success");

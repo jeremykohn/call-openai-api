@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const mockModels = [
   { id: "gpt-4", created: 1686935002, owned_by: "openai" },
-  { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" }
+  { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
 ];
 
 test("loads models and allows selection", async ({ page }) => {
@@ -10,7 +10,7 @@ test("loads models and allows selection", async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: mockModels })
+      body: JSON.stringify({ data: mockModels }),
     });
   });
 
@@ -23,13 +23,15 @@ test("loads models and allows selection", async ({ page }) => {
   await expect(select).toHaveValue("gpt-4");
 });
 
-test("shows a loading indicator while models are fetching", async ({ page }) => {
+test("shows a loading indicator while models are fetching", async ({
+  page,
+}) => {
   await page.route("**/api/models", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: mockModels })
+      body: JSON.stringify({ data: mockModels }),
     });
   });
 
@@ -49,8 +51,8 @@ test("shows an error message when models API fails", async ({ page }) => {
       contentType: "application/json",
       body: JSON.stringify({
         message: "Failed to load models.",
-        details: "Server unavailable"
-      })
+        details: "Server unavailable",
+      }),
     });
   });
 
@@ -61,12 +63,14 @@ test("shows an error message when models API fails", async ({ page }) => {
   await expect(alert).toContainText("Server unavailable");
 });
 
-test("disables selector and shows empty-state text when no models", async ({ page }) => {
+test("disables selector and shows empty-state text when no models", async ({
+  page,
+}) => {
   await page.route("**/api/models", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ data: [] })
+      body: JSON.stringify({ data: [] }),
     });
   });
 

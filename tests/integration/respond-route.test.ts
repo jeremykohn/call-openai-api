@@ -38,12 +38,11 @@ afterAll(() => {
 });
 
 describe("POST /api/respond", () => {
-
   it("returns 400 for invalid prompt", async () => {
     try {
       await $fetch("/api/respond", {
         method: "POST",
-        body: { prompt: "   " }
+        body: { prompt: "   " },
       });
       throw new Error("Expected request to fail");
     } catch (error) {
@@ -67,7 +66,7 @@ describe("POST /api/respond", () => {
 
     const result = await $fetch("/api/respond", {
       method: "POST",
-      body: { prompt: "Hello" }
+      body: { prompt: "Hello" },
     });
 
     expect(result).toEqual({ response: "Hello from OpenAI" });
@@ -80,7 +79,7 @@ describe("POST /api/respond", () => {
     try {
       await $fetch("/api/respond", {
         method: "POST",
-        body: { prompt: "Hello" }
+        body: { prompt: "Hello" },
       });
       throw new Error("Expected request to fail");
     } catch (error) {

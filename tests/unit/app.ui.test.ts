@@ -15,12 +15,12 @@ const buildWrapper = async (state: {
       start: vi.fn(),
       succeed: vi.fn(),
       fail: vi.fn(),
-      reset: vi.fn()
-    })
+      reset: vi.fn(),
+    }),
   }));
 
   vi.doMock("../../app/utils/prompt-validation", () => ({
-    validatePrompt: () => ({ ok: true, prompt: "Hello" })
+    validatePrompt: () => ({ ok: true, prompt: "Hello" }),
   }));
 
   const { default: App } = await import("../../app/app.vue");
@@ -37,7 +37,7 @@ describe("App UI states", () => {
       status: "idle",
       data: null,
       error: null,
-      errorDetails: null
+      errorDetails: null,
     });
 
     const container = wrapper.find(".page");
@@ -50,7 +50,7 @@ describe("App UI states", () => {
       status: "loading",
       data: null,
       error: null,
-      errorDetails: null
+      errorDetails: null,
     });
 
     expect(wrapper.text()).toContain("Waiting for response from ChatGPT...");
@@ -61,7 +61,7 @@ describe("App UI states", () => {
       status: "idle",
       data: null,
       error: null,
-      errorDetails: null
+      errorDetails: null,
     });
 
     expect(wrapper.text()).toContain("Maximum 4000 characters.");
@@ -72,7 +72,7 @@ describe("App UI states", () => {
       status: "success",
       data: "Hello",
       error: null,
-      errorDetails: null
+      errorDetails: null,
     });
 
     expect(wrapper.text()).toContain("Response");
@@ -84,7 +84,7 @@ describe("App UI states", () => {
       status: "error",
       data: null,
       error: "Oops",
-      errorDetails: "Details here"
+      errorDetails: "Details here",
     });
 
     expect(wrapper.text()).toContain("Something went wrong");
@@ -97,13 +97,15 @@ describe("App UI states", () => {
       status: "idle",
       data: null,
       error: null,
-      errorDetails: null
+      errorDetails: null,
     });
 
     const button = wrapper.get("button[type='submit']");
     expect(button.classes()).toContain("focus-visible:outline");
 
-    const termsLink = wrapper.get("a[href='https://openai.com/policies/terms-of-use/']");
+    const termsLink = wrapper.get(
+      "a[href='https://openai.com/policies/terms-of-use/']",
+    );
     expect(termsLink.classes()).toContain("focus-visible:outline");
   });
 });

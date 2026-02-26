@@ -14,9 +14,9 @@ let mockBody: unknown = {
       id: "gpt-test-1",
       object: "model",
       created: 1686935002,
-      owned_by: "openai"
-    }
-  ]
+      owned_by: "openai",
+    },
+  ],
 };
 
 let lastRequest: {
@@ -27,7 +27,7 @@ let lastRequest: {
 const mockServer = createServer((request, response) => {
   lastRequest = {
     url: request.url ?? undefined,
-    authorization: request.headers.authorization
+    authorization: request.headers.authorization,
   };
 
   if (request.url !== "/models") {
@@ -63,9 +63,9 @@ beforeEach(() => {
         id: "gpt-test-1",
         object: "model",
         created: 1686935002,
-        owned_by: "openai"
-      }
-    ]
+        owned_by: "openai",
+      },
+    ],
   };
   lastRequest = {};
 });
@@ -94,7 +94,7 @@ describe("GET /api/models", () => {
 
       expect(fetchError.statusCode ?? fetchError.status).toBe(401);
       expect(fetchError.data?.message).toBe(
-        "Error: Failed API call, could not get list of OpenAI models"
+        "Error: Failed API call, could not get list of OpenAI models",
       );
     }
   });
@@ -114,27 +114,32 @@ describe("GET /api/models", () => {
           id: "gpt-test-1",
           object: "model",
           created: 1686935002,
-          owned_by: "openai"
+          owned_by: "openai",
         },
         {
           id: "gpt-test-2",
           object: "model",
           created: 1686935003,
-          owned_by: "openai"
-        }
-      ]
+          owned_by: "openai",
+        },
+      ],
     };
 
-    const result = await $fetch<{ data: Array<{ id: string; object: "model"; created: number; owned_by: string }> }>(
-      "/api/models"
-    );
+    const result = await $fetch<{
+      data: Array<{
+        id: string;
+        object: "model";
+        created: number;
+        owned_by: string;
+      }>;
+    }>("/api/models");
 
     expect(result.data).toHaveLength(2);
     expect(result.data[0]).toEqual({
       id: "gpt-test-1",
       object: "model",
       created: 1686935002,
-      owned_by: "openai"
+      owned_by: "openai",
     });
   });
 
@@ -155,7 +160,7 @@ describe("GET /api/models", () => {
 
       expect(fetchError.statusCode ?? fetchError.status).toBe(401);
       expect(fetchError.data?.message).toBe(
-        "Error: Failed API call, could not get list of OpenAI models"
+        "Error: Failed API call, could not get list of OpenAI models",
       );
       expect(fetchError.data?.details).toContain("Invalid API key");
     }

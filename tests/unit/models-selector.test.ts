@@ -10,8 +10,18 @@ import type { OpenAIModel } from "../../types/models";
 describe("ModelsSelector Component", () => {
   const mockModels: OpenAIModel[] = [
     { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
-    { id: "gpt-3.5-turbo", object: "model", created: 1677649963, owned_by: "openai" },
-    { id: "text-davinci-003", object: "model", created: 1669599635, owned_by: "openai" }
+    {
+      id: "gpt-3.5-turbo",
+      object: "model",
+      created: 1677649963,
+      owned_by: "openai",
+    },
+    {
+      id: "text-davinci-003",
+      object: "model",
+      created: 1669599635,
+      owned_by: "openai",
+    },
   ];
 
   beforeEach(() => {
@@ -24,8 +34,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -42,8 +52,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const options = wrapper.findAll("option");
@@ -63,8 +73,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-3.5-turbo",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -77,8 +87,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: null,
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const options = wrapper.findAll("option");
@@ -95,13 +105,15 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "loading"
-        }
+          status: "loading",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
-      const loadingIndicator = wrapper.find("[data-testid='loading-indicator']");
-      
+      const loadingIndicator = wrapper.find(
+        "[data-testid='loading-indicator']",
+      );
+
       expect(select.exists()).toBe(false);
       expect(loadingIndicator.exists()).toBe(true);
     });
@@ -112,8 +124,8 @@ describe("ModelsSelector Component", () => {
           models: mockModels,
           selectedModelId: "gpt-4",
           status: "error",
-          error: "Failed to load models"
-        }
+          error: "Failed to load models",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -125,8 +137,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: [],
           selectedModelId: null,
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -138,8 +150,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -156,8 +168,8 @@ describe("ModelsSelector Component", () => {
           selectedModelId: null,
           status: "error",
           error: errorMessage,
-          errorDetails: "401 Unauthorized"
-        }
+          errorDetails: "401 Unauthorized",
+        },
       });
 
       const errorElement = wrapper.find("[role='alert']");
@@ -173,8 +185,8 @@ describe("ModelsSelector Component", () => {
           selectedModelId: null,
           status: "error",
           error: "API Error",
-          errorDetails: errorDetails
-        }
+          errorDetails: errorDetails,
+        },
       });
 
       const errorElement = wrapper.find("[role='alert']");
@@ -186,8 +198,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const errorElement = wrapper.find("[role='alert']");
@@ -201,8 +213,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: [],
           selectedModelId: null,
-          status: "loading"
-        }
+          status: "loading",
+        },
       });
 
       const loadingElement = wrapper.find("[data-testid='loading-indicator']");
@@ -214,8 +226,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const loadingElement = wrapper.find("[data-testid='loading-indicator']");
@@ -229,8 +241,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -246,8 +258,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -255,7 +267,9 @@ describe("ModelsSelector Component", () => {
 
       const modelSelectedEmitted = wrapper.emitted("model-selected");
       expect(modelSelectedEmitted).toBeTruthy();
-      const emittedModel = modelSelectedEmitted?.[0]?.[0] as OpenAIModel | undefined;
+      const emittedModel = modelSelectedEmitted?.[0]?.[0] as
+        | OpenAIModel
+        | undefined;
       expect(emittedModel?.id).toBe("gpt-3.5-turbo");
       expect(emittedModel?.created).toBe(1677649963);
     });
@@ -266,8 +280,8 @@ describe("ModelsSelector Component", () => {
           models: mockModels,
           selectedModelId: "gpt-4",
           status: "error",
-          error: "Failed to load models"
-        }
+          error: "Failed to load models",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -282,8 +296,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -295,13 +309,13 @@ describe("ModelsSelector Component", () => {
         props: {
           models: mockModels,
           selectedModelId: "gpt-4",
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const label = wrapper.find("label");
       const select = wrapper.find("[data-testid='models-select']");
-      
+
       expect(label.attributes("for")).toBe(select.attributes("id"));
     });
 
@@ -311,8 +325,8 @@ describe("ModelsSelector Component", () => {
           models: [],
           selectedModelId: null,
           status: "error",
-          error: "Failed to load models"
-        }
+          error: "Failed to load models",
+        },
       });
 
       const alert = wrapper.find("[role='alert']");
@@ -324,13 +338,15 @@ describe("ModelsSelector Component", () => {
         props: {
           models: [],
           selectedModelId: null,
-          status: "loading"
-        }
+          status: "loading",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
-      const loadingIndicator = wrapper.find("[data-testid='loading-indicator']");
-      
+      const loadingIndicator = wrapper.find(
+        "[data-testid='loading-indicator']",
+      );
+
       expect(select.exists()).toBe(false);
       expect(loadingIndicator.exists()).toBe(true);
       expect(loadingIndicator.text()).toContain("Loading models");
@@ -342,8 +358,8 @@ describe("ModelsSelector Component", () => {
           models: mockModels,
           selectedModelId: "gpt-4",
           status: "success",
-          required: true
-        }
+          required: true,
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
@@ -357,8 +373,8 @@ describe("ModelsSelector Component", () => {
         props: {
           models: [],
           selectedModelId: null,
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const options = wrapper.findAll("option");
@@ -374,15 +390,15 @@ describe("ModelsSelector Component", () => {
         id: "this-is-an-extremely-long-model-name-that-might-break-the-ui-if-not-handled-properly",
         object: "model",
         created: 1686935002,
-        owned_by: "openai"
+        owned_by: "openai",
       };
 
       const wrapper = mount(ModelsSelector, {
         props: {
           models: [longNameModel],
           selectedModelId: longNameModel.id,
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const option = wrapper.findAll("option").at(1);
@@ -395,15 +411,15 @@ describe("ModelsSelector Component", () => {
         id: "model-v1.0_beta+release",
         object: "model",
         created: 1686935002,
-        owned_by: "openai"
+        owned_by: "openai",
       };
 
       const wrapper = mount(ModelsSelector, {
         props: {
           models: [specialCharModel],
           selectedModelId: specialCharModel.id,
-          status: "success"
-        }
+          status: "success",
+        },
       });
 
       const select = wrapper.find("[data-testid='models-select']");
