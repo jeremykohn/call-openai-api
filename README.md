@@ -2,6 +2,9 @@
 
 A simple Nuxt 4 app that sends a prompt to the OpenAI Responses API, shows a loading state, and renders the response.
 
+Notes:
+- Prompts are limited to 4000 characters.
+
 ## Prerequisites
 - Node.js 20+
 - An OpenAI API key
@@ -23,6 +26,7 @@ Optional (for local testing or proxies):
 
 ```bash
 OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_ALLOWED_HOSTS=api.openai.com
 ```
 
 3. Install dependencies:
