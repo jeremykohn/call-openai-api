@@ -56,6 +56,17 @@ describe("App UI states", () => {
     expect(wrapper.text()).toContain("Waiting for response from ChatGPT...");
   });
 
+  it("shows the prompt length hint", async () => {
+    const wrapper = await buildWrapper({
+      status: "idle",
+      data: null,
+      error: null,
+      errorDetails: null
+    });
+
+    expect(wrapper.text()).toContain("Maximum 4000 characters.");
+  });
+
   it("renders the success state", async () => {
     const wrapper = await buildWrapper({
       status: "success",

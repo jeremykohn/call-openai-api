@@ -22,4 +22,14 @@ describe("validatePrompt", () => {
       expect(result.prompt).toBe("Hello, world!");
     }
   });
+
+  it("rejects prompts over the maximum length", () => {
+    const longPrompt = "a".repeat(4001);
+    const result = validatePrompt(longPrompt);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Prompt must be 4000 characters or fewer.");
+    }
+  });
 });

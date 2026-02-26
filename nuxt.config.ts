@@ -9,7 +9,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     openaiApiKey: process.env.OPENAI_API_KEY ?? "",
-    openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
+    openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+    openaiAllowedHosts: process.env.OPENAI_ALLOWED_HOSTS ?? "api.openai.com"
   },
   css: ["~/assets/main.css"],
   typescript: {

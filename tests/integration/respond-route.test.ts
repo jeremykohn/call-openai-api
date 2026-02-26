@@ -29,6 +29,7 @@ const mockPort = await new Promise<number>((resolve) => {
 });
 
 process.env.OPENAI_BASE_URL = `http://127.0.0.1:${mockPort}`;
+process.env.OPENAI_ALLOWED_HOSTS = "127.0.0.1";
 
 await setup({ rootDir, dev: true });
 

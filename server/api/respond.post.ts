@@ -23,6 +23,34 @@ type OpenAIErrorPayload = {
   };
 };
 
+const parseAllowedHosts = (allowedHosts: string | undefined): string[] => {
+  return (allowedHosts ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean);
+};
+
+const isAllowedHost = (baseUrl: string, allowedHosts: string[]): boolean => {
+  try {
+    const url = new URL(baseUrl);
+    return allowedHosts.includes(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const sanitizeDetails = (details: string, apiKey: string | undefined): string => {
+  if (!apiKey) {
+    return details.replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
+  }
+
+  const escapedKey = apiKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const keyPattern = new RegExp(escapedKey, "g");
+  return details
+    .replace(keyPattern, "[redacted]")
+    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
+};
+
 const extractOutputText = (response: OpenAIResponse): string => {
   if (response.output_text) {
     return response.output_text;
@@ -44,6 +72,12 @@ export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig();
   const apiKey = config.openaiApiKey;
   const baseUrl = config.openaiBaseUrl;
+  const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
+
+  if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
+    setResponseStatus(event, 500);
+    return { message: "OpenAI base URL is not allowed." } satisfies ApiErrorResponse;
+  }
 
   if (!apiKey) {
     setResponseStatus(event, 500);
@@ -96,10 +130,14 @@ export default defineEventHandler(async (event: H3Event) => {
         !errorMessage && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined
       ].filter(Boolean);
 
+      const details = detailParts.length
+        ? sanitizeDetails(detailParts.join(" | "), apiKey)
+        : undefined;
+
       setResponseStatus(event, response.status || 500);
       return {
         message: "Request to OpenAI failed.",
-        details: detailParts.length ? detailParts.join(" | ") : undefined
+        details
       } satisfies ApiErrorResponse;
     }
 
@@ -112,11 +150,12 @@ export default defineEventHandler(async (event: H3Event) => {
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : undefined;
+    const details = message ? sanitizeDetails(message, apiKey) : undefined;
 
     setResponseStatus(event, 500);
     return {
       message: "Request to OpenAI failed.",
-      details: message
+      details
     } satisfies ApiErrorResponse;
   }
 });

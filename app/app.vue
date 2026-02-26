@@ -19,6 +19,13 @@
         novalidate
         @submit.prevent="handleSubmit"
       >
+        <ModelsSelector
+          v-model:selectedModelId="selectedModelId"
+          :models="modelsState.data ?? []"
+          :status="modelsState.status"
+          :error="modelsState.error"
+          :error-details="modelsState.errorDetails"
+        />
         <label class="text-sm font-semibold text-slate-700" for="prompt-input">Prompt</label>
         <textarea
           id="prompt-input"
@@ -27,11 +34,15 @@
           class="min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 shadow-sm placeholder:text-slate-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           name="prompt"
           rows="5"
+          maxlength="4000"
           required
           aria-required="true"
           :aria-invalid="validationError ? 'true' : 'false'"
-          :aria-describedby="validationError ? 'prompt-error' : undefined"
+          :aria-describedby="validationError ? 'prompt-help prompt-error' : 'prompt-help'"
         ></textarea>
+        <p id="prompt-help" class="text-xs text-slate-500">
+          Maximum 4000 characters.
+        </p>
         <p v-if="validationError" id="prompt-error" class="text-sm text-red-700" role="alert">
           {{ validationError }}
         </p>
@@ -92,14 +103,18 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRequestState } from "./composables/use-request-state";
+import { useModelsState } from "./composables/use-models-state";
+import ModelsSelector from "./components/ModelsSelector.vue";
 import { validatePrompt } from "./utils/prompt-validation";
 import type { ApiErrorResponse, ApiSuccessResponse } from "../types/chat";
 
 const prompt = ref("");
 const promptInput = ref<HTMLTextAreaElement | null>(null);
 const validationError = ref<string | null>(null);
+const selectedModelId = ref<string | null>(null);
 
 const { state, start, succeed, fail } = useRequestState();
+const { state: modelsState } = useModelsState();
 
 const handleSubmit = async () => {
   validationError.value = null;
