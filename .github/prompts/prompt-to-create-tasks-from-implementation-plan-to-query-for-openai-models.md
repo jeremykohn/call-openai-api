@@ -2,6 +2,6 @@ Generate a list of tasks to implement the plan that is described in .github/impl
 
 Make sure the tasks are small, specific, independently testable, and ordered by dependency.
 
-Save the list of tasks to a new file .github/tasks/tasks-to-query-for-openai-models-2.md.
+Save the list of tasks to a new file .github/tasks/tasks-to-query-for-openai-models.md.
 
 Don't write any code yet.
