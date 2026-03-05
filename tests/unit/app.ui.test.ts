@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 const buildWrapper = async (state: {
   status: string;
@@ -193,7 +194,7 @@ describe("App submit payload with model selection", () => {
   it("omits model from request when no model is selected", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       response: "Test response",
-      model: "gpt-4.1-mini", // Server will use default
+      model: DEFAULT_MODEL, // Server will use default
     });
     const wrapper = await buildSubmitWrapper(mockFetch);
 

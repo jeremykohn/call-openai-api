@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 let requestBody: { prompt: string; model?: string };
 let responseStatus = 200;
@@ -47,11 +48,7 @@ const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       ok: true,
       status: 200,
       jsonPayload: {
-        data: [
-          { id: "gpt-4" },
-          { id: "gpt-3.5-turbo" },
-          { id: "gpt-4.1-mini" },
-        ],
+        data: [{ id: "gpt-4" }, { id: "gpt-3.5-turbo" }, { id: DEFAULT_MODEL }],
       },
     });
   }
@@ -130,7 +127,7 @@ describe("Server: Model Validation Logic", () => {
     expect(responseStatus).toBe(200);
     expect(result).toEqual({
       response: "Hello from OpenAI",
-      model: "gpt-4.1-mini",
+      model: DEFAULT_MODEL,
     });
 
     const responsesCall = fetchMock.mock.calls.find(([url]) =>
@@ -140,7 +137,7 @@ describe("Server: Model Validation Logic", () => {
 
     const requestInit = responsesCall?.[1] as RequestInit;
     expect(JSON.parse(String(requestInit.body))).toMatchObject({
-      model: "gpt-4.1-mini",
+      model: DEFAULT_MODEL,
       input: "Hello",
     });
   });

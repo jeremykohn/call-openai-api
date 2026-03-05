@@ -8,10 +8,10 @@ import type {
 } from "../../types/chat";
 import type { OpenAIModel } from "../../types/models";
 import { validatePrompt } from "../../app/utils/prompt-validation";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 const OPENAI_PATH = "responses";
 const MODELS_PATH = "models";
-const DEFAULT_MODEL = "gpt-4.1-mini";
 
 type OpenAIResponse = {
   output_text?: string;

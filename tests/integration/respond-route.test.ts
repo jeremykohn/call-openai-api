@@ -3,6 +3,7 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 process.env.OPENAI_API_KEY = "test-key";
 
@@ -27,7 +28,7 @@ const mockServer = createServer((request, response) => {
           data: [
             { id: "gpt-4", created: 1686935002, owned_by: "openai" },
             { id: "gpt-3.5-turbo", created: 1686935002, owned_by: "openai" },
-            { id: "gpt-4.1-mini", created: 1686935002, owned_by: "openai" },
+            { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
           ],
         }),
       );
@@ -108,7 +109,7 @@ describe("POST /api/respond", () => {
 
     expect(result).toEqual({
       response: "Hello from OpenAI",
-      model: "gpt-4.1-mini",
+      model: DEFAULT_MODEL,
     });
   });
 
@@ -171,12 +172,12 @@ describe("POST /api/respond", () => {
     // Verify response includes the default model
     expect(result).toEqual({
       response: "Response with default",
-      model: "gpt-4.1-mini",
+      model: DEFAULT_MODEL,
     });
 
     // Verify the OpenAI request included the default model
     expect(lastRequestBody).toBeDefined();
-    expect((lastRequestBody as any).model).toBe("gpt-4.1-mini");
+    expect((lastRequestBody as any).model).toBe(DEFAULT_MODEL);
   });
 
   it("includes model in successful response payload", async () => {
