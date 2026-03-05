@@ -1,5 +1,7 @@
 <template>
-  <div class="page min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900">
+  <div
+    class="page min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900"
+  >
     <header class="px-6 pb-8 pt-12 text-center">
       <a
         class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-white"
@@ -7,13 +9,20 @@
       >
         Skip to main
       </a>
-      <h1 class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">ChatGPT prompt tester</h1>
+      <h1
+        class="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl"
+      >
+        ChatGPT prompt tester
+      </h1>
       <p class="mx-auto mt-3 max-w-xl text-base text-slate-600 sm:text-lg">
         Send a prompt and see the response.
       </p>
     </header>
 
-    <main id="maincontent" class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 pb-14">
+    <main
+      id="maincontent"
+      class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 pb-14"
+    >
       <form
         class="grid gap-4 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-lg shadow-slate-200/50 backdrop-blur"
         novalidate
@@ -26,7 +35,9 @@
           :error="modelsState.error"
           :error-details="modelsState.errorDetails"
         />
-        <label class="text-sm font-semibold text-slate-700" for="prompt-input">Prompt</label>
+        <label class="text-sm font-semibold text-slate-700" for="prompt-input"
+          >Prompt</label
+        >
         <textarea
           id="prompt-input"
           ref="promptInput"
@@ -38,12 +49,19 @@
           required
           aria-required="true"
           :aria-invalid="validationError ? 'true' : 'false'"
-          :aria-describedby="validationError ? 'prompt-help prompt-error' : 'prompt-help'"
+          :aria-describedby="
+            validationError ? 'prompt-help prompt-error' : 'prompt-help'
+          "
         ></textarea>
         <p id="prompt-help" class="text-xs text-slate-500">
           Maximum 4000 characters.
         </p>
-        <p v-if="validationError" id="prompt-error" class="text-sm text-red-700" role="alert">
+        <p
+          v-if="validationError"
+          id="prompt-error"
+          class="text-sm text-red-700"
+          role="alert"
+        >
           {{ validationError }}
         </p>
 
@@ -61,8 +79,13 @@
           v-if="state.status === 'loading'"
           class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/90 p-6 text-slate-700 shadow-sm"
         >
-          <span class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" aria-hidden="true"></span>
-          <span class="text-sm font-medium">Waiting for response from ChatGPT...</span>
+          <span
+            class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600"
+            aria-hidden="true"
+          ></span>
+          <span class="text-sm font-medium"
+            >Waiting for response from ChatGPT...</span
+          >
         </div>
 
         <div
@@ -89,12 +112,22 @@
       </section>
     </main>
 
-    <footer class="mt-6 border-t border-slate-200 bg-white/80 px-6 py-6 text-center text-sm text-slate-600">
+    <footer
+      class="mt-6 border-t border-slate-200 bg-white/80 px-6 py-6 text-center text-sm text-slate-600"
+    >
       <p class="mx-auto max-w-3xl">
         By messaging ChatGPT, an AI chatbot, you agree to its
-        <a class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500" href="https://openai.com/policies/terms-of-use/">Terms</a>
+        <a
+          class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          href="https://openai.com/policies/terms-of-use/"
+          >Terms</a
+        >
         and have read its
-        <a class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500" href="https://openai.com/policies/privacy-policy/">Privacy Policy</a>.
+        <a
+          class="font-semibold text-blue-600 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          href="https://openai.com/policies/privacy-policy/"
+          >Privacy Policy</a
+        >.
       </p>
     </footer>
   </div>
@@ -129,16 +162,25 @@ const handleSubmit = async () => {
   start();
 
   try {
+    const requestBody: { prompt: string; model?: string } = {
+      prompt: validation.prompt,
+    };
+    if (selectedModelId.value) {
+      requestBody.model = selectedModelId.value;
+    }
+
     const response = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
-      body: { prompt: validation.prompt }
+      body: requestBody,
     });
 
     succeed(response.response || "");
   } catch (error) {
     const apiError = error as { data?: ApiErrorResponse };
     const message = apiError.data?.message ?? "Request failed.";
-    const details = apiError.data?.details ?? (error instanceof Error ? error.message : undefined);
+    const details =
+      apiError.data?.details ??
+      (error instanceof Error ? error.message : undefined);
 
     fail(message, details);
   }

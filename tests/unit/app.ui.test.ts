@@ -109,3 +109,106 @@ describe("App UI states", () => {
     expect(termsLink.classes()).toContain("focus-visible:outline");
   });
 });
+
+describe("App submit payload with model selection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const buildSubmitWrapper = async (mockFetch: ReturnType<typeof vi.fn>) => {
+    vi.resetModules();
+    vi.stubGlobal("$fetch", mockFetch);
+
+    vi.doMock("../../app/composables/use-request-state", () => ({
+      useRequestState: () => ({
+        state: ref({
+          status: "idle",
+          data: null,
+          error: null,
+          errorDetails: null,
+        }),
+        start: vi.fn(),
+        succeed: vi.fn(),
+        fail: vi.fn(),
+        reset: vi.fn(),
+      }),
+    }));
+
+    vi.doMock("../../app/composables/use-models-state", () => ({
+      useModelsState: () => ({
+        state: ref({
+          status: "success",
+          data: [
+            {
+              id: "gpt-4",
+              object: "model",
+              created: 1686935002,
+              owned_by: "openai",
+            },
+            {
+              id: "gpt-3.5-turbo",
+              object: "model",
+              created: 1677649963,
+              owned_by: "openai",
+            },
+          ],
+          error: null,
+          errorDetails: null,
+        }),
+      }),
+    }));
+
+    vi.doMock("../../app/utils/prompt-validation", () => ({
+      validatePrompt: () => ({ ok: true, prompt: "Hello" }),
+    }));
+
+    const { default: App } = await import("../../app/app.vue");
+    return mount(App);
+  };
+
+  it("includes selected model in request when model is selected", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      response: "Test response",
+      model: "gpt-4",
+    });
+    const wrapper = await buildSubmitWrapper(mockFetch);
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("[data-testid='models-select']").setValue("gpt-4");
+    await wrapper.get("form").trigger("submit");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/respond",
+      expect.objectContaining({
+        method: "POST",
+        body: {
+          prompt: "Hello",
+          model: "gpt-4",
+        },
+      }),
+    );
+  });
+
+  it("omits model from request when no model is selected", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      response: "Test response",
+      model: "gpt-4.1-mini", // Server will use default
+    });
+    const wrapper = await buildSubmitWrapper(mockFetch);
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("form").trigger("submit");
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/api/respond",
+      expect.objectContaining({
+        method: "POST",
+        body: {
+          prompt: "Hello",
+        },
+      }),
+    );
+  });
+});

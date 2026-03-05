@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, beforeEach } from "vitest";
 import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
@@ -8,17 +8,51 @@ process.env.OPENAI_API_KEY = "test-key";
 
 let mockStatus = 200;
 let mockBody: unknown = { output_text: "Hello from OpenAI" };
+let lastRequestBody: unknown = null;
 
 const mockServer = createServer((request, response) => {
-  if (request.url !== "/responses") {
+  // Collect request body
+  let body = "";
+  request.on("data", (chunk) => {
+    body += chunk.toString();
+  });
+
+  request.on("end", () => {
+    if (request.url === "/models") {
+      // Return mock models list
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "application/json");
+      response.end(
+        JSON.stringify({
+          data: [
+            { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+            { id: "gpt-3.5-turbo", created: 1686935002, owned_by: "openai" },
+            { id: "gpt-4.1-mini", created: 1686935002, owned_by: "openai" },
+          ],
+        }),
+      );
+      return;
+    }
+
+    if (request.url === "/responses") {
+      // Capture request body for assertions
+      if (body) {
+        try {
+          lastRequestBody = JSON.parse(body);
+        } catch {
+          lastRequestBody = null;
+        }
+      }
+
+      response.statusCode = mockStatus;
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify(mockBody));
+      return;
+    }
+
     response.statusCode = 404;
     response.end();
-    return;
-  }
-
-  response.statusCode = mockStatus;
-  response.setHeader("Content-Type", "application/json");
-  response.end(JSON.stringify(mockBody));
+  });
 });
 
 const mockPort = await new Promise<number>((resolve) => {
@@ -38,6 +72,9 @@ afterAll(() => {
 });
 
 describe("POST /api/respond", () => {
+  beforeEach(() => {
+    lastRequestBody = null;
+  });
   it("returns 400 for invalid prompt", async () => {
     try {
       await $fetch("/api/respond", {
@@ -69,7 +106,10 @@ describe("POST /api/respond", () => {
       body: { prompt: "Hello" },
     });
 
-    expect(result).toEqual({ response: "Hello from OpenAI" });
+    expect(result).toEqual({
+      response: "Hello from OpenAI",
+      model: "gpt-4.1-mini",
+    });
   });
 
   it("returns API error details when upstream fails", async () => {
@@ -97,5 +137,60 @@ describe("POST /api/respond", () => {
       expect(fetchError.data?.details).toContain("status: 401");
       expect(fetchError.statusCode ?? fetchError.status).toBe(401);
     }
+  });
+
+  it("includes selected model in upstream OpenAI request", async () => {
+    mockStatus = 200;
+    mockBody = { output_text: "Response with model" };
+
+    const result = await $fetch("/api/respond", {
+      method: "POST",
+      body: { prompt: "Hello", model: "gpt-4" },
+    });
+
+    // Verify response includes the model that was used
+    expect(result).toEqual({
+      response: "Response with model",
+      model: "gpt-4",
+    });
+
+    // Verify the OpenAI request included the selected model
+    expect(lastRequestBody).toBeDefined();
+    expect((lastRequestBody as any).model).toBe("gpt-4");
+  });
+
+  it("includes default model in upstream OpenAI request when no model selected", async () => {
+    mockStatus = 200;
+    mockBody = { output_text: "Response with default" };
+
+    const result = await $fetch("/api/respond", {
+      method: "POST",
+      body: { prompt: "Hello" },
+    });
+
+    // Verify response includes the default model
+    expect(result).toEqual({
+      response: "Response with default",
+      model: "gpt-4.1-mini",
+    });
+
+    // Verify the OpenAI request included the default model
+    expect(lastRequestBody).toBeDefined();
+    expect((lastRequestBody as any).model).toBe("gpt-4.1-mini");
+  });
+
+  it("includes model in successful response payload", async () => {
+    mockStatus = 200;
+    mockBody = { output_text: "Test output" };
+
+    const result = await $fetch("/api/respond", {
+      method: "POST",
+      body: { prompt: "Test", model: "gpt-3.5-turbo" },
+    });
+
+    // Verify response includes model field
+    expect(result).toHaveProperty("response");
+    expect(result).toHaveProperty("model");
+    expect((result as any).model).toBe("gpt-3.5-turbo");
   });
 });

@@ -6,9 +6,11 @@ import type {
   ApiSuccessResponse,
   PromptRequest,
 } from "../../types/chat";
+import type { OpenAIModel } from "../../types/models";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 
 const OPENAI_PATH = "responses";
+const MODELS_PATH = "models";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 
 type OpenAIResponse = {
@@ -58,6 +60,69 @@ const sanitizeDetails = (
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 };
 
+/**
+ * Fetches available models from OpenAI API
+ * Returns array of model IDs or empty array if fetch fails
+ */
+const fetchAvailableModels = async (
+  apiKey: string,
+  baseUrl: string,
+): Promise<string[]> => {
+  try {
+    const url = new URL(baseUrl);
+    const normalizedPath = url.pathname.replace(/\/$/, "");
+    url.pathname = `${normalizedPath}/${MODELS_PATH}`;
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = (await response.json()) as { data?: OpenAIModel[] };
+    return (payload.data ?? []).map((model) => model.id);
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Resolves the model to use for OpenAI request
+ * Validates against available models if model is provided
+ * Returns resolved model ID or error details
+ */
+const resolveModel = async (
+  requestedModel: string | undefined,
+  apiKey: string,
+  baseUrl: string,
+): Promise<{ model: string } | { error: string }> => {
+  // If no model requested, use default
+  if (!requestedModel || requestedModel.trim() === "") {
+    return { model: DEFAULT_MODEL };
+  }
+
+  // Fetch available models to validate
+  const availableModels = await fetchAvailableModels(apiKey, baseUrl);
+
+  // If we couldn't fetch models, allow request to proceed (fail gracefully)
+  if (availableModels.length === 0) {
+    return { model: requestedModel };
+  }
+
+  // Validate requested model exists in available models
+  if (!availableModels.includes(requestedModel)) {
+    return { error: "Model is not valid" };
+  }
+
+  return { model: requestedModel };
+};
+
 const extractOutputText = (response: OpenAIResponse): string => {
   if (response.output_text) {
     return response.output_text;
@@ -95,6 +160,15 @@ export default defineEventHandler(async (event: H3Event) => {
     } satisfies ApiErrorResponse;
   }
 
+  // Resolve model: validate if provided, use default if not
+  const modelResolution = await resolveModel(body.model, apiKey, baseUrl);
+  if ("error" in modelResolution) {
+    setResponseStatus(event, 400);
+    return { message: modelResolution.error } satisfies ApiErrorResponse;
+  }
+
+  const resolvedModel = modelResolution.model;
+
   try {
     const requestUrl = (() => {
       const url = new URL(baseUrl);
@@ -110,7 +184,7 @@ export default defineEventHandler(async (event: H3Event) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: DEFAULT_MODEL,
+        model: resolvedModel,
         input: validation.prompt,
       }),
     });
@@ -159,6 +233,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const result: ApiSuccessResponse = {
       response: text,
+      model: resolvedModel,
     };
 
     return result;
