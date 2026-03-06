@@ -6,9 +6,7 @@ import type {
   ApiSuccessResponse,
   PromptRequest,
 } from "../../types/chat";
-import type { OpenAIModel } from "../../types/models";
 import { validatePrompt } from "../../app/utils/prompt-validation";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
 import {
   buildOpenAIErrorDetails,
   buildOpenAIUrl,
@@ -16,99 +14,14 @@ import {
   parseAllowedHosts,
   sanitizeDetails,
 } from "../utils/openai-security";
+import {
+  extractOutputText,
+  parseOpenAIResponseBody,
+} from "../utils/openai-response-parser";
+import { resolveModel } from "../utils/openai-model-validation";
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "responses";
-const MODELS_PATH = "models";
-
-type OpenAIResponse = {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{ text?: string }>;
-  }>;
-};
-
-type OpenAIErrorPayload = {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-    param?: string;
-  };
-};
-
-/**
- * Fetches available models from OpenAI API.
- * Returns array of model IDs on success, or null if fetch fails or response is invalid.
- * Failure to fetch models triggers a fail-closed validation (502 response).
- */
-const fetchAvailableModels = async (
-  apiKey: string,
-  baseUrl: string,
-): Promise<string[] | null> => {
-  try {
-    const response = await fetch(buildOpenAIUrl(baseUrl, MODELS_PATH), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const payload = (await response.json()) as { data?: OpenAIModel[] };
-    return (payload.data ?? []).map((model) => model.id);
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Resolves the model to use for OpenAI request
- * Validates against available models if model is provided
- * Returns resolved model ID or error details
- */
-const resolveModel = async (
-  requestedModel: string | undefined,
-  apiKey: string,
-  baseUrl: string,
-): Promise<{ model: string } | { error: string; statusCode: 400 | 502 }> => {
-  // If no model requested, use default
-  if (!requestedModel || requestedModel.trim() === "") {
-    return { model: DEFAULT_MODEL };
-  }
-
-  // Fetch available models to validate
-  const availableModels = await fetchAvailableModels(apiKey, baseUrl);
-
-  // Return 502 (Bad Gateway) when model validation cannot be performed due to
-  // upstream OpenAI API unavailability—signals a dependency issue, not our fault
-  if (availableModels === null) {
-    return {
-      error: "Unable to validate model right now. Please try again.",
-      statusCode: HTTP_STATUS.BAD_GATEWAY,
-    };
-  }
-
-  // Validate requested model exists in available models
-  if (!availableModels.includes(requestedModel)) {
-    return { error: "Model is not valid", statusCode: HTTP_STATUS.BAD_REQUEST };
-  }
-
-  return { model: requestedModel };
-};
-
-const extractOutputText = (response: OpenAIResponse): string => {
-  if (response.output_text) {
-    return response.output_text;
-  }
-
-  const first = response.output?.[0]?.content?.[0]?.text;
-  return first ?? "";
-};
 
 export default defineEventHandler(async (event: H3Event) => {
   const body = await readBody<PromptRequest>(event);
@@ -163,15 +76,7 @@ export default defineEventHandler(async (event: H3Event) => {
     });
 
     const rawBody = await response.text();
-    let payload: OpenAIResponse & OpenAIErrorPayload = {};
-
-    if (rawBody) {
-      try {
-        payload = JSON.parse(rawBody) as OpenAIResponse & OpenAIErrorPayload;
-      } catch {
-        payload = {};
-      }
-    }
+    const payload = parseOpenAIResponseBody(rawBody);
 
     if (!response.ok) {
       const details = buildOpenAIErrorDetails({
