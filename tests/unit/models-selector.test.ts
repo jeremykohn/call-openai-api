@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import ModelsSelector from "../../app/components/ModelsSelector.vue";
 import type { OpenAIModel } from "../../types/models";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 /**
  * Unit tests for ModelsSelector component.
@@ -384,6 +385,39 @@ describe("ModelsSelector Component", () => {
 
       const select = wrapper.find("[data-testid='models-select']");
       expect(select.attributes("aria-required")).toBe("true");
+    });
+
+    it("shows help text with default model and links it via aria-describedby", () => {
+      const wrapper = mount(ModelsSelector, {
+        props: {
+          models: mockModels,
+          selectedModelId: null,
+          status: "success",
+        },
+      });
+
+      const help = wrapper.find("#models-select-help");
+      const select = wrapper.find("[data-testid='models-select']");
+
+      expect(help.exists()).toBe(true);
+      expect(help.text()).toContain(DEFAULT_MODEL);
+      expect(select.attributes("aria-describedby")).toContain(
+        "models-select-help",
+      );
+    });
+
+    it("does not mark empty selection as an error in success state", () => {
+      const wrapper = mount(ModelsSelector, {
+        props: {
+          models: mockModels,
+          selectedModelId: null,
+          status: "success",
+        },
+      });
+
+      const select = wrapper.find("[data-testid='models-select']");
+      expect(select.attributes("aria-invalid")).toBe("false");
+      expect(wrapper.find("#models-select-error").exists()).toBe(false);
     });
   });
 
