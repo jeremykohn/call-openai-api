@@ -100,8 +100,6 @@ test("shows validation error when prompt is empty", async ({ page }) => {
 
   await expect(page.getByRole("alert")).toContainText("Please enter a prompt.");
   await expect(page.getByLabel("Prompt")).toBeFocused();
-
-  await page.waitForTimeout(200);
   expect(respondCalled).toBe(false);
 });
 
