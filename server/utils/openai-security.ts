@@ -34,6 +34,51 @@ export const sanitizeDetails = (
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 };
 
+type OpenAIErrorDetailsPayload = {
+  error?: {
+    message?: string;
+    type?: string;
+    code?: string;
+    param?: string;
+  };
+};
+
+type OpenAIErrorDetailsInput = {
+  payload: OpenAIErrorDetailsPayload;
+  response: Pick<Response, "status" | "statusText" | "headers">;
+  rawBody: string;
+  apiKey?: string | null;
+};
+
+export const buildOpenAIErrorDetails = ({
+  payload,
+  response,
+  rawBody,
+  apiKey,
+}: OpenAIErrorDetailsInput): string | undefined => {
+  const requestId =
+    response.headers.get("x-request-id") ??
+    response.headers.get("x-openai-request-id");
+  const errorMessage = payload.error?.message;
+
+  const detailParts = [
+    errorMessage,
+    payload.error?.type ? `type: ${payload.error.type}` : undefined,
+    payload.error?.code ? `code: ${payload.error.code}` : undefined,
+    payload.error?.param ? `param: ${payload.error.param}` : undefined,
+    response.status ? `status: ${response.status}` : undefined,
+    response.statusText ? `statusText: ${response.statusText}` : undefined,
+    requestId ? `requestId: ${requestId}` : undefined,
+    !errorMessage && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined,
+  ].filter(Boolean);
+
+  if (!detailParts.length) {
+    return undefined;
+  }
+
+  return sanitizeDetails(detailParts.join(" | "), apiKey);
+};
+
 export const buildOpenAIUrl = (baseUrl: string, path: string): string => {
   const url = new URL(baseUrl);
   const normalizedPath = url.pathname.replace(/\/$/, "");

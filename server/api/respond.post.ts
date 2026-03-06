@@ -10,6 +10,7 @@ import type { OpenAIModel } from "../../types/models";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 import { DEFAULT_MODEL } from "../../shared/constants/models";
 import {
+  buildOpenAIErrorDetails,
   buildOpenAIUrl,
   isAllowedHost,
   parseAllowedHosts,
@@ -172,26 +173,12 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (!response.ok) {
-      const requestId =
-        response.headers.get("x-request-id") ??
-        response.headers.get("x-openai-request-id");
-      const errorMessage = payload.error?.message;
-      const detailParts = [
-        errorMessage,
-        payload.error?.type ? `type: ${payload.error.type}` : undefined,
-        payload.error?.code ? `code: ${payload.error.code}` : undefined,
-        payload.error?.param ? `param: ${payload.error.param}` : undefined,
-        response.status ? `status: ${response.status}` : undefined,
-        response.statusText ? `statusText: ${response.statusText}` : undefined,
-        requestId ? `requestId: ${requestId}` : undefined,
-        !errorMessage && rawBody
-          ? `response: ${rawBody.slice(0, 300)}`
-          : undefined,
-      ].filter(Boolean);
-
-      const details = detailParts.length
-        ? sanitizeDetails(detailParts.join(" | "), apiKey)
-        : undefined;
+      const details = buildOpenAIErrorDetails({
+        payload,
+        response,
+        rawBody,
+        apiKey,
+      });
 
       setResponseStatus(event, response.status || 500);
       return {
