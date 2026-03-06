@@ -39,7 +39,7 @@ type UseModelsStateReturn = {
  * const { state, fetchModels, isLoading, hasError } = useModelsState();
  *
  * if (state.value.status === 'success') {
- *   console.log('Models:', state.value.data);
+ *   // Models are available in state.value.data
  * }
  * ```
  */
