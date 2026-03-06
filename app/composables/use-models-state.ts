@@ -1,5 +1,6 @@
 import { ref, readonly, computed, type Ref } from "vue";
-import type { OpenAIModel, ModelsErrorResponse } from "../../types/models";
+import type { OpenAIModel } from "../../types/models";
+import { getErrorMessage, getErrorDetails } from "../utils/type-guards";
 
 /**
  * State structure for models list management.
@@ -84,24 +85,12 @@ export const useModelsState = (): UseModelsStateReturn => {
       state.value.status = "error";
       state.value.data = null;
 
-      const apiError =
-        typeof error === "object" && error !== null
-          ? (error as { data?: ModelsErrorResponse; message?: string })
-          : undefined;
-
-      const messageFromApi = apiError?.data?.message ?? apiError?.message;
-      const detailsFromApi = apiError?.data?.details ?? null;
-
-      if (messageFromApi || detailsFromApi) {
-        state.value.error = messageFromApi ?? "Unknown error";
-        state.value.errorDetails = detailsFromApi;
-      } else if (error instanceof Error) {
-        state.value.error = error.message;
-        state.value.errorDetails = null;
-      } else {
-        state.value.error = "An error occurred while fetching models";
-        state.value.errorDetails = null;
-      }
+      // Extract error message and details using type guards
+      state.value.error = getErrorMessage(
+        error,
+        "An error occurred while fetching models",
+      );
+      state.value.errorDetails = getErrorDetails(error) ?? null;
     }
   };
 

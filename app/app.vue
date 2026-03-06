@@ -139,7 +139,12 @@ import { useRequestState } from "./composables/use-request-state";
 import { useModelsState } from "./composables/use-models-state";
 import ModelsSelector from "./components/ModelsSelector.vue";
 import { validatePrompt } from "./utils/prompt-validation";
-import type { ApiErrorResponse, ApiSuccessResponse } from "../types/chat";
+import {
+  isNetworkFetchError,
+  getErrorMessage,
+  getErrorDetails,
+} from "./utils/type-guards";
+import type { ApiSuccessResponse } from "../types/chat";
 
 const prompt = ref("");
 const promptInput = ref<HTMLTextAreaElement | null>(null);
@@ -148,32 +153,6 @@ const selectedModelId = ref<string | null>(null);
 
 const { state, start, succeed, fail } = useRequestState();
 const { state: modelsState } = useModelsState();
-
-const isNetworkFetchError = (error: unknown): boolean => {
-  if (error instanceof TypeError) {
-    return /fetch|network/i.test(error.message);
-  }
-
-  if (typeof error === "object" && error !== null) {
-    const maybeError = error as {
-      message?: string;
-      status?: number;
-      statusCode?: number;
-    };
-
-    if (typeof maybeError.status === "number") {
-      return false;
-    }
-
-    if (typeof maybeError.statusCode === "number") {
-      return false;
-    }
-
-    return /fetch|network|no response/i.test(maybeError.message ?? "");
-  }
-
-  return false;
-};
 
 const handleSubmit = async () => {
   validationError.value = null;
@@ -202,14 +181,13 @@ const handleSubmit = async () => {
 
     succeed(response.response || "");
   } catch (error) {
-    const apiError = error as { data?: ApiErrorResponse };
     const message = isNetworkFetchError(error)
       ? "Unable to reach the server. Please check your connection and try again."
-      : (apiError.data?.message ?? "Request failed.");
+      : getErrorMessage(error, "Request failed.");
 
     const details = isNetworkFetchError(error)
       ? undefined
-      : (apiError.data?.details ??
+      : (getErrorDetails(error) ??
         (error instanceof Error ? error.message : undefined));
 
     fail(message, details);
