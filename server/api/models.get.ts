@@ -6,6 +6,12 @@ import type {
   ModelsResponse,
   OpenAIModel,
 } from "../../types/models";
+import {
+  buildOpenAIUrl,
+  isAllowedHost,
+  parseAllowedHosts,
+  sanitizeDetails,
+} from "../utils/openai-security";
 
 const OPENAI_PATH = "models";
 
@@ -18,41 +24,6 @@ type OpenAIModelsPayload = {
     code?: string;
     param?: string;
   };
-};
-
-const buildModelsUrl = (baseUrl: string): string => {
-  const url = new URL(baseUrl);
-  const normalizedPath = url.pathname.replace(/\/$/, "");
-  url.pathname = `${normalizedPath}/${OPENAI_PATH}`;
-  return url.toString();
-};
-
-const parseAllowedHosts = (allowedHosts: string | undefined): string[] => {
-  return (allowedHosts ?? "")
-    .split(",")
-    .map((host) => host.trim())
-    .filter(Boolean);
-};
-
-const isAllowedHost = (baseUrl: string, allowedHosts: string[]): boolean => {
-  try {
-    const url = new URL(baseUrl);
-    return allowedHosts.includes(url.hostname);
-  } catch {
-    return false;
-  }
-};
-
-const sanitizeDetails = (details: string, apiKey: string | null): string => {
-  if (!apiKey) {
-    return details;
-  }
-
-  const escapedKey = apiKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const keyPattern = new RegExp(escapedKey, "g");
-  return details
-    .replace(keyPattern, "[redacted]")
-    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 };
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -76,7 +47,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const requestUrl = buildModelsUrl(baseUrl);
+    const requestUrl = buildOpenAIUrl(baseUrl, OPENAI_PATH);
     const response = await fetch(requestUrl, {
       method: "GET",
       headers: {

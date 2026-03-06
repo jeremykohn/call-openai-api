@@ -9,6 +9,12 @@ import type {
 import type { OpenAIModel } from "../../types/models";
 import { validatePrompt } from "../../app/utils/prompt-validation";
 import { DEFAULT_MODEL } from "../../shared/constants/models";
+import {
+  buildOpenAIUrl,
+  isAllowedHost,
+  parseAllowedHosts,
+  sanitizeDetails,
+} from "../utils/openai-security";
 
 const OPENAI_PATH = "responses";
 const MODELS_PATH = "models";
@@ -29,37 +35,6 @@ type OpenAIErrorPayload = {
   };
 };
 
-const parseAllowedHosts = (allowedHosts: string | undefined): string[] => {
-  return (allowedHosts ?? "")
-    .split(",")
-    .map((host) => host.trim())
-    .filter(Boolean);
-};
-
-const isAllowedHost = (baseUrl: string, allowedHosts: string[]): boolean => {
-  try {
-    const url = new URL(baseUrl);
-    return allowedHosts.includes(url.hostname);
-  } catch {
-    return false;
-  }
-};
-
-const sanitizeDetails = (
-  details: string,
-  apiKey: string | undefined,
-): string => {
-  if (!apiKey) {
-    return details.replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
-  }
-
-  const escapedKey = apiKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const keyPattern = new RegExp(escapedKey, "g");
-  return details
-    .replace(keyPattern, "[redacted]")
-    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
-};
-
 /**
  * Fetches available models from OpenAI API.
  * Returns array of model IDs on success, or null if fetch fails or response is invalid.
@@ -70,11 +45,7 @@ const fetchAvailableModels = async (
   baseUrl: string,
 ): Promise<string[] | null> => {
   try {
-    const url = new URL(baseUrl);
-    const normalizedPath = url.pathname.replace(/\/$/, "");
-    url.pathname = `${normalizedPath}/${MODELS_PATH}`;
-
-    const response = await fetch(url.toString(), {
+    const response = await fetch(buildOpenAIUrl(baseUrl, MODELS_PATH), {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -175,12 +146,7 @@ export default defineEventHandler(async (event: H3Event) => {
   const resolvedModel = modelResolution.model;
 
   try {
-    const requestUrl = (() => {
-      const url = new URL(baseUrl);
-      const normalizedPath = url.pathname.replace(/\/$/, "");
-      url.pathname = `${normalizedPath}/${OPENAI_PATH}`;
-      return url.toString();
-    })();
+    const requestUrl = buildOpenAIUrl(baseUrl, OPENAI_PATH);
 
     const response = await fetch(requestUrl, {
       method: "POST",
