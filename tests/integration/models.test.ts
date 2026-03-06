@@ -77,7 +77,7 @@ afterAll(() => {
 });
 
 describe("GET /api/models", () => {
-  it("returns 500 when API key is missing", async () => {
+  it("returns upstream 401 when OpenAI models API rejects the request", async () => {
     // The route checks runtime config, which is set at startup.
     // This test verifies the error handling pathway exists by checking
     // the error response structure when the upstream API fails with 401.
