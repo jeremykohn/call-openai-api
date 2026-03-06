@@ -80,7 +80,10 @@ export default defineEventHandler(async (event: H3Event) => {
       owned_by,
     }));
 
-    return { data: models } satisfies Pick<ModelsResponse, "data">;
+    return {
+      object: "list",
+      data: models,
+    } satisfies ModelsResponse;
   } catch (error) {
     const detailText = error instanceof Error ? error.message : "Unknown error";
     setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);

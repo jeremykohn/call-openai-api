@@ -112,7 +112,7 @@ const hasModels = computed(() => props.models.length > 0);
 
 const describedBy = computed(() => {
   const ids = ["models-select-help"];
-  if (props.error) {
+  if (props.status === "error" && props.error) {
     ids.unshift("models-select-error");
   }
   return ids.join(" ");
