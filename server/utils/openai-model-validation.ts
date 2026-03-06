@@ -47,7 +47,7 @@ export const resolveModel = async (
 
   const availableModels = await fetchAvailableModels(apiKey, baseUrl);
 
-  if (availableModels === null) {
+  if (!availableModels) {
     return {
       error: "Unable to validate model right now. Please try again.",
       statusCode: HTTP_STATUS.BAD_GATEWAY,
