@@ -11,10 +11,11 @@ describe("useModelsState", () => {
   });
 
   it("auto-fetches models on initialization and transitions to loading state", async () => {
+    const mockData: OpenAIModel[] = [
+      { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
+    ];
     const mockFetch = vi.fn().mockResolvedValue({
-      data: [
-        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
-      ],
+      data: mockData,
     });
     vi.stubGlobal("$fetch", mockFetch);
 
@@ -31,10 +32,11 @@ describe("useModelsState", () => {
   });
 
   it("status transitions to loading when fetch is called", async () => {
+    const mockData: OpenAIModel[] = [
+      { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
+    ];
     const mockFetch = vi.fn().mockResolvedValue({
-      data: [
-        { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
-      ],
+      data: mockData,
     });
     vi.stubGlobal("$fetch", mockFetch);
 
@@ -47,8 +49,8 @@ describe("useModelsState", () => {
   });
 
   it("status transitions to success with data when API succeeds", async () => {
-    const mockData = [
-      { id: "gpt-4", created: 1686935002, owned_by: "openai" } as OpenAIModel,
+    const mockData: OpenAIModel[] = [
+      { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
     ];
     const mockFetch = vi.fn().mockResolvedValue({ data: mockData });
     vi.stubGlobal("$fetch", mockFetch);

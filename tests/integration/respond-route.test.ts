@@ -4,12 +4,13 @@ import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { DEFAULT_MODEL } from "../../shared/constants/models";
+import type { ApiSuccessResponse } from "../../types/chat";
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 process.env.OPENAI_API_KEY = "test-key";
 
 let mockStatus = 200;
 let mockBody: unknown = { output_text: "Hello from OpenAI" };
-let lastRequestBody: unknown = null;
+let lastRequestBody: { model: string; input: string } | null = null;
 
 const mockServer = createServer((request, response) => {
   // Collect request body
@@ -39,7 +40,10 @@ const mockServer = createServer((request, response) => {
       // Capture request body for assertions
       if (body) {
         try {
-          lastRequestBody = JSON.parse(body);
+          lastRequestBody = JSON.parse(body) as {
+            model: string;
+            input: string;
+          };
         } catch {
           lastRequestBody = null;
         }
@@ -102,7 +106,7 @@ describe("POST /api/respond", () => {
     mockStatus = 200;
     mockBody = { output_text: "Hello from OpenAI" };
 
-    const result = await $fetch("/api/respond", {
+    const result = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
       body: { prompt: "Hello" },
     });
@@ -144,7 +148,7 @@ describe("POST /api/respond", () => {
     mockStatus = 200;
     mockBody = { output_text: "Response with model" };
 
-    const result = await $fetch("/api/respond", {
+    const result = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
       body: { prompt: "Hello", model: "gpt-4" },
     });
@@ -157,14 +161,14 @@ describe("POST /api/respond", () => {
 
     // Verify the OpenAI request included the selected model
     expect(lastRequestBody).toBeDefined();
-    expect((lastRequestBody as any).model).toBe("gpt-4");
+    expect(lastRequestBody?.model).toBe("gpt-4");
   });
 
   it("includes default model in upstream OpenAI request when no model selected", async () => {
     mockStatus = 200;
     mockBody = { output_text: "Response with default" };
 
-    const result = await $fetch("/api/respond", {
+    const result = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
       body: { prompt: "Hello" },
     });
@@ -177,14 +181,14 @@ describe("POST /api/respond", () => {
 
     // Verify the OpenAI request included the default model
     expect(lastRequestBody).toBeDefined();
-    expect((lastRequestBody as any).model).toBe(DEFAULT_MODEL);
+    expect(lastRequestBody?.model).toBe(DEFAULT_MODEL);
   });
 
   it("includes model in successful response payload", async () => {
     mockStatus = 200;
     mockBody = { output_text: "Test output" };
 
-    const result = await $fetch("/api/respond", {
+    const result = await $fetch<ApiSuccessResponse>("/api/respond", {
       method: "POST",
       body: { prompt: "Test", model: "gpt-3.5-turbo" },
     });
@@ -192,6 +196,6 @@ describe("POST /api/respond", () => {
     // Verify response includes model field
     expect(result).toHaveProperty("response");
     expect(result).toHaveProperty("model");
-    expect((result as any).model).toBe("gpt-3.5-turbo");
+    expect(result.model).toBe("gpt-3.5-turbo");
   });
 });

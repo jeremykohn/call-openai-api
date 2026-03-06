@@ -61,13 +61,14 @@ const sanitizeDetails = (
 };
 
 /**
- * Fetches available models from OpenAI API
- * Returns array of model IDs or empty array if fetch fails
+ * Fetches available models from OpenAI API.
+ * Returns array of model IDs on success, or null if fetch fails or response is invalid.
+ * Failure to fetch models triggers a fail-closed validation (502 response).
  */
 const fetchAvailableModels = async (
   apiKey: string,
   baseUrl: string,
-): Promise<string[]> => {
+): Promise<string[] | null> => {
   try {
     const url = new URL(baseUrl);
     const normalizedPath = url.pathname.replace(/\/$/, "");
@@ -82,13 +83,13 @@ const fetchAvailableModels = async (
     });
 
     if (!response.ok) {
-      return [];
+      return null;
     }
 
     const payload = (await response.json()) as { data?: OpenAIModel[] };
     return (payload.data ?? []).map((model) => model.id);
   } catch {
-    return [];
+    return null;
   }
 };
 
@@ -101,7 +102,7 @@ const resolveModel = async (
   requestedModel: string | undefined,
   apiKey: string,
   baseUrl: string,
-): Promise<{ model: string } | { error: string }> => {
+): Promise<{ model: string } | { error: string; statusCode: 400 | 502 }> => {
   // If no model requested, use default
   if (!requestedModel || requestedModel.trim() === "") {
     return { model: DEFAULT_MODEL };
@@ -110,14 +111,18 @@ const resolveModel = async (
   // Fetch available models to validate
   const availableModels = await fetchAvailableModels(apiKey, baseUrl);
 
-  // If we couldn't fetch models, allow request to proceed (fail gracefully)
-  if (availableModels.length === 0) {
-    return { model: requestedModel };
+  // Return 502 (Bad Gateway) when model validation cannot be performed due to
+  // upstream OpenAI API unavailability—signals a dependency issue, not our fault
+  if (availableModels === null) {
+    return {
+      error: "Unable to validate model right now. Please try again.",
+      statusCode: 502,
+    };
   }
 
   // Validate requested model exists in available models
   if (!availableModels.includes(requestedModel)) {
-    return { error: "Model is not valid" };
+    return { error: "Model is not valid", statusCode: 400 };
   }
 
   return { model: requestedModel };
@@ -163,7 +168,7 @@ export default defineEventHandler(async (event: H3Event) => {
   // Resolve model: validate if provided, use default if not
   const modelResolution = await resolveModel(body.model, apiKey, baseUrl);
   if ("error" in modelResolution) {
-    setResponseStatus(event, 400);
+    setResponseStatus(event, modelResolution.statusCode);
     return { message: modelResolution.error } satisfies ApiErrorResponse;
   }
 

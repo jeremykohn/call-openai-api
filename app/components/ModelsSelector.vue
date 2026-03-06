@@ -23,7 +23,14 @@
         viewBox="0 0 24 24"
         aria-hidden="true"
       >
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        />
         <path
           class="opacity-75"
           fill="currentColor"
@@ -41,7 +48,7 @@
       :value="selectedModelId || ''"
       :disabled="status === 'error' || !hasModels"
       :aria-label="`Select an AI model${required ? ' (required)' : ''}`"
-      :aria-busy="status === 'loading'"
+      :aria-busy="false"
       :aria-invalid="status === 'error' ? 'true' : 'false'"
       :aria-required="required"
       :aria-describedby="describedBy"
@@ -49,12 +56,10 @@
       @change="handleSelectChange"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
     >
-      <option value="">{{ hasModels ? "Select a model" : "No models available" }}</option>
-      <option
-        v-for="model in models"
-        :key="model.id"
-        :value="model.id"
-      >
+      <option value="">
+        {{ hasModels ? "Select a model" : "No models available" }}
+      </option>
+      <option v-for="model in models" :key="model.id" :value="model.id">
         {{ model.id }}
       </option>
     </select>
@@ -64,16 +69,16 @@
       id="models-select-help"
       class="text-xs text-slate-500"
     >
-      Uses the default model if none is selected.
+      Uses <code class="font-mono">{{ DEFAULT_MODEL }}</code> by default if none is selected.
     </p>
 
     <!-- Error Message -->
-      <div
-        v-if="status === 'error' && error"
-        id="models-select-error"
-        role="alert"
-        class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 border border-red-200"
-      >
+    <div
+      v-if="status === 'error' && error"
+      id="models-select-error"
+      role="alert"
+      class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 border border-red-200"
+    >
       <p class="font-semibold">{{ error }}</p>
       <p v-if="errorDetails" class="mt-1 text-red-700">{{ errorDetails }}</p>
     </div>
@@ -83,13 +88,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { OpenAIModel } from "../../types/models";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 /**
  * Props for ModelsSelector component.
  */
 const props = defineProps<{
   /** List of available models to display */
-  models: OpenAIModel[];
+  models: readonly OpenAIModel[];
   /** Currently selected model ID (v-model) */
   selectedModelId: string | null;
   /** Loading/error status */
@@ -117,7 +123,7 @@ const describedBy = computed(() => {
  */
 const emit = defineEmits<{
   /** Update the v-model value with selected model ID */
-  "update:selectedModelId": [modelId: string];
+  "update:selectedModelId": [modelId: string | null];
   /** Emit when a model is selected with full model object */
   "model-selected": [model: OpenAIModel];
 }>();
@@ -137,9 +143,9 @@ const handleSelectChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
   const modelId = target.value;
 
-  if (modelId) {
-    emit("update:selectedModelId", modelId);
+  emit("update:selectedModelId", modelId || null);
 
+  if (modelId) {
     const model = getModelById(modelId);
     if (model) {
       emit("model-selected", model);

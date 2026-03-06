@@ -3,6 +3,7 @@ import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 let requestBody: { prompt: string; model?: string };
 let responseStatus = 200;
+let modelsFetchOk = true;
 
 const readBodyMock = vi.fn();
 const setResponseStatusMock = vi.fn();
@@ -44,6 +45,14 @@ const buildFetchResponse = (options: {
 
 const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
   if (url.endsWith("/models")) {
+    if (!modelsFetchOk) {
+      return buildFetchResponse({
+        ok: false,
+        status: 503,
+        statusText: "Service Unavailable",
+      });
+    }
+
     return buildFetchResponse({
       ok: true,
       status: 200,
@@ -73,6 +82,7 @@ const { default: handler } = await import("../../server/api/respond.post");
 describe("Server: Model Validation Logic", () => {
   beforeEach(() => {
     responseStatus = 200;
+    modelsFetchOk = true;
     requestBody = { prompt: "Hello" };
     vi.clearAllMocks();
 
@@ -140,5 +150,22 @@ describe("Server: Model Validation Logic", () => {
       model: DEFAULT_MODEL,
       input: "Hello",
     });
+  });
+
+  it("returns 502 when model validation cannot be performed", async () => {
+    modelsFetchOk = false;
+    requestBody = { prompt: "Hello", model: "gpt-4" };
+
+    const result = await handler({} as never);
+
+    expect(responseStatus).toBe(502);
+    expect(result).toEqual({
+      message: "Unable to validate model right now. Please try again.",
+    });
+
+    const responsesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith("/responses"),
+    );
+    expect(responsesCall).toBeUndefined();
   });
 });

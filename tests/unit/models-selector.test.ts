@@ -288,6 +288,26 @@ describe("ModelsSelector Component", () => {
       // Select is disabled, so the value cannot be changed via setValue
       expect(select.attributes("disabled")).toBeDefined();
     });
+
+    it("emits null update when selection is cleared", async () => {
+      const wrapper = mount(ModelsSelector, {
+        props: {
+          models: mockModels,
+          selectedModelId: "gpt-4",
+          status: "success",
+        },
+      });
+
+      const select = wrapper.find("[data-testid='models-select']");
+      await select.setValue("");
+
+      const updateEmitted = wrapper.emitted("update:selectedModelId");
+      expect(updateEmitted).toBeTruthy();
+      expect(updateEmitted?.[0]).toEqual([null]);
+
+      const modelSelectedEmitted = wrapper.emitted("model-selected");
+      expect(modelSelectedEmitted).toBeFalsy();
+    });
   });
 
   describe("Accessibility", () => {

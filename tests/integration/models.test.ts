@@ -19,10 +19,12 @@ let mockBody: unknown = {
   ],
 };
 
-let lastRequest: {
+interface TestRequest {
   url?: string;
   authorization?: string;
-} = {};
+}
+
+let lastRequest: TestRequest = {};
 
 const mockServer = createServer((request, response) => {
   lastRequest = {

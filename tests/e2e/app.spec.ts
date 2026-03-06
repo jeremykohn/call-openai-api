@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { DEFAULT_MODEL } from "../../shared/constants/models";
 
 const mockModels = [
   { id: "gpt-4", created: 1686935002, owned_by: "openai" },
@@ -19,7 +20,10 @@ test("submits a prompt and renders the response", async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ response: "Hello from the API" }),
+      body: JSON.stringify({
+        response: "Hello from the API",
+        model: DEFAULT_MODEL,
+      }),
     });
   });
 
@@ -83,7 +87,10 @@ test("shows validation error when prompt is empty", async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ response: "Should not be called" }),
+      body: JSON.stringify({
+        response: "Should not be called",
+        model: DEFAULT_MODEL,
+      }),
     });
   });
 
@@ -96,4 +103,93 @@ test("shows validation error when prompt is empty", async ({ page }) => {
 
   await page.waitForTimeout(200);
   expect(respondCalled).toBe(false);
+});
+
+test("selecting a model and submitting generates response using that model", async ({
+  page,
+}) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModels }),
+    });
+  });
+
+  let capturedRequestBody: { prompt: string; model?: string } | null = null;
+  await page.route("**/api/respond", async (route) => {
+    const request = route.request();
+    capturedRequestBody = JSON.parse(request.postData() || "{}");
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        response: "Response using gpt-4",
+        model: "gpt-4",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Select a specific model
+  await page.getByRole("combobox", { name: "Model" }).selectOption("gpt-4");
+
+  await page.getByLabel("Prompt").fill("Test with selected model");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByRole("heading", { name: "Response" })).toBeVisible();
+  await expect(page.getByText("Response using gpt-4")).toBeVisible();
+
+  // Verify the request included the selected model
+  expect(capturedRequestBody).toEqual({
+    prompt: "Test with selected model",
+    model: "gpt-4",
+  });
+});
+
+test("submitting without selecting a model generates response using default", async ({
+  page,
+}) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModels }),
+    });
+  });
+
+  let capturedRequestBody: { prompt: string; model?: string } | null = null;
+  await page.route("**/api/respond", async (route) => {
+    const request = route.request();
+    capturedRequestBody = JSON.parse(request.postData() || "{}");
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        response: "Response using default model",
+        model: DEFAULT_MODEL,
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Do NOT select a model - leave it as default placeholder
+  await page.getByLabel("Prompt").fill("Test with default model");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByRole("heading", { name: "Response" })).toBeVisible();
+  await expect(page.getByText("Response using default model")).toBeVisible();
+
+  // Verify the request did NOT include a model field
+  expect(capturedRequestBody).toEqual({
+    prompt: "Test with default model",
+  });
 });
