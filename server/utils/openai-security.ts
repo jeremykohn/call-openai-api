@@ -15,7 +15,25 @@ export const isAllowedHost = (
 ): boolean => {
   try {
     const url = new URL(baseUrl);
-    return allowedHosts.includes(url.hostname);
+
+    if (!["https:", "http:"].includes(url.protocol)) {
+      return false;
+    }
+
+    if (url.username || url.password) {
+      return false;
+    }
+
+    const normalizedHost = url.hostname.toLowerCase();
+    const normalizedHostWithPort = url.host.toLowerCase();
+
+    return allowedHosts.some((allowedHost) => {
+      const normalizedAllowedHost = allowedHost.toLowerCase();
+      return (
+        normalizedAllowedHost === normalizedHost ||
+        normalizedAllowedHost === normalizedHostWithPort
+      );
+    });
   } catch {
     return false;
   }

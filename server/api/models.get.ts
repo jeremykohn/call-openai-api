@@ -16,7 +16,7 @@ const OPENAI_PATH = "models";
 
 export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig();
-  const apiKey = config.openaiApiKey || null;
+  const apiKey = config.openaiApiKey?.trim();
   const baseUrl = config.openaiBaseUrl;
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
 

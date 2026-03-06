@@ -22,15 +22,27 @@ export function isErrorWithMessage(
  * Detects TypeErrors with fetch/network keywords or objects without HTTP status codes.
  */
 export function isNetworkFetchError(error: unknown): boolean {
+  const networkErrorCodes = new Set([
+    "ECONNREFUSED",
+    "ECONNRESET",
+    "ENOTFOUND",
+    "EAI_AGAIN",
+    "ETIMEDOUT",
+    "UND_ERR_CONNECT_TIMEOUT",
+  ]);
+
   if (error instanceof TypeError) {
     return /fetch|network/i.test(error.message);
   }
 
   if (typeof error === "object" && error !== null) {
     const maybeError = error as {
+      name?: string;
       message?: string;
       status?: number;
       statusCode?: number;
+      code?: string;
+      cause?: { code?: string; name?: string; message?: string };
     };
 
     // If it has a status code, it's an HTTP error, not a network error
@@ -42,8 +54,26 @@ export function isNetworkFetchError(error: unknown): boolean {
       return false;
     }
 
+    if (
+      (typeof maybeError.code === "string" &&
+        networkErrorCodes.has(maybeError.code)) ||
+      (typeof maybeError.cause?.code === "string" &&
+        networkErrorCodes.has(maybeError.cause.code))
+    ) {
+      return true;
+    }
+
+    if (
+      maybeError.name === "AbortError" ||
+      maybeError.cause?.name === "AbortError"
+    ) {
+      return true;
+    }
+
     // Check message for network-related keywords
-    return /fetch|network|no response/i.test(maybeError.message ?? "");
+    return /fetch|network|no response|timed out|failed to connect/i.test(
+      [maybeError.message, maybeError.cause?.message].filter(Boolean).join(" "),
+    );
   }
 
   return false;

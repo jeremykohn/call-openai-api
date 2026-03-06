@@ -7,7 +7,7 @@ import { getErrorMessage, getErrorDetails } from "../utils/type-guards";
  */
 type ModelsState = {
   status: "idle" | "loading" | "success" | "error";
-  data: OpenAIModel[] | ReadonlyArray<OpenAIModel> | null;
+  data: ReadonlyArray<OpenAIModel> | null;
   error: string | null;
   errorDetails: string | null;
 };
