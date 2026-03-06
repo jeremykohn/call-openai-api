@@ -1,18 +1,7 @@
-export type OpenAIResponsePayload = {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{ text?: string }>;
-  }>;
-};
-
-export type OpenAIErrorPayload = {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-    param?: string;
-  };
-};
+import type {
+  OpenAIErrorPayload,
+  OpenAIResponsePayload,
+} from "../types/openai";
 
 export const parseOpenAIResponseBody = (
   rawBody: string,

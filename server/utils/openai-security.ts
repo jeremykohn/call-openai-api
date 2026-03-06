@@ -1,3 +1,5 @@
+import type { OpenAIErrorPayload } from "../types/openai";
+
 export const parseAllowedHosts = (
   allowedHosts: string | undefined,
 ): string[] => {
@@ -34,17 +36,8 @@ export const sanitizeDetails = (
     .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]");
 };
 
-type OpenAIErrorDetailsPayload = {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-    param?: string;
-  };
-};
-
 type OpenAIErrorDetailsInput = {
-  payload: OpenAIErrorDetailsPayload;
+  payload: OpenAIErrorPayload;
   response: Pick<Response, "status" | "statusText" | "headers">;
   rawBody: string;
   apiKey?: string | null;

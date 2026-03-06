@@ -1,11 +1,8 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type {
-  ModelsErrorResponse,
-  ModelsResponse,
-  OpenAIModel,
-} from "../../types/models";
+import type { ModelsErrorResponse, ModelsResponse } from "../../types/models";
+import type { OpenAIModelsPayload } from "../types/openai";
 import {
   buildOpenAIErrorDetails,
   buildOpenAIUrl,
@@ -16,17 +13,6 @@ import {
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";
-
-type OpenAIModelsPayload = {
-  object?: string;
-  data?: OpenAIModel[];
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-    param?: string;
-  };
-};
 
 export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig();
