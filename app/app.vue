@@ -149,6 +149,32 @@ const selectedModelId = ref<string | null>(null);
 const { state, start, succeed, fail } = useRequestState();
 const { state: modelsState } = useModelsState();
 
+const isNetworkFetchError = (error: unknown): boolean => {
+  if (error instanceof TypeError) {
+    return /fetch|network/i.test(error.message);
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybeError = error as {
+      message?: string;
+      status?: number;
+      statusCode?: number;
+    };
+
+    if (typeof maybeError.status === "number") {
+      return false;
+    }
+
+    if (typeof maybeError.statusCode === "number") {
+      return false;
+    }
+
+    return /fetch|network|no response/i.test(maybeError.message ?? "");
+  }
+
+  return false;
+};
+
 const handleSubmit = async () => {
   validationError.value = null;
 
@@ -177,10 +203,14 @@ const handleSubmit = async () => {
     succeed(response.response || "");
   } catch (error) {
     const apiError = error as { data?: ApiErrorResponse };
-    const message = apiError.data?.message ?? "Request failed.";
-    const details =
-      apiError.data?.details ??
-      (error instanceof Error ? error.message : undefined);
+    const message = isNetworkFetchError(error)
+      ? "Unable to reach the server. Please check your connection and try again."
+      : (apiError.data?.message ?? "Request failed.");
+
+    const details = isNetworkFetchError(error)
+      ? undefined
+      : (apiError.data?.details ??
+        (error instanceof Error ? error.message : undefined));
 
     fail(message, details);
   }
