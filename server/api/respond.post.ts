@@ -16,6 +16,7 @@ import {
   parseAllowedHosts,
   sanitizeDetails,
 } from "../utils/openai-security";
+import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "responses";
 const MODELS_PATH = "models";
@@ -88,13 +89,13 @@ const resolveModel = async (
   if (availableModels === null) {
     return {
       error: "Unable to validate model right now. Please try again.",
-      statusCode: 502,
+      statusCode: HTTP_STATUS.BAD_GATEWAY,
     };
   }
 
   // Validate requested model exists in available models
   if (!availableModels.includes(requestedModel)) {
-    return { error: "Model is not valid", statusCode: 400 };
+    return { error: "Model is not valid", statusCode: HTTP_STATUS.BAD_REQUEST };
   }
 
   return { model: requestedModel };
@@ -114,7 +115,7 @@ export default defineEventHandler(async (event: H3Event) => {
   const validation = validatePrompt(body?.prompt ?? "");
 
   if (!validation.ok) {
-    setResponseStatus(event, 400);
+    setResponseStatus(event, HTTP_STATUS.BAD_REQUEST);
     return { message: validation.error } satisfies ApiErrorResponse;
   }
 
@@ -124,14 +125,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
 
   if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI base URL is not allowed.",
     } satisfies ApiErrorResponse;
   }
 
   if (!apiKey) {
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI API key is not configured.",
     } satisfies ApiErrorResponse;
@@ -180,7 +181,10 @@ export default defineEventHandler(async (event: H3Event) => {
         apiKey,
       });
 
-      setResponseStatus(event, response.status || 500);
+      setResponseStatus(
+        event,
+        response.status || HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
       return {
         message: "Request to OpenAI failed.",
         details,
@@ -199,7 +203,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const message = error instanceof Error ? error.message : undefined;
     const details = message ? sanitizeDetails(message, apiKey) : undefined;
 
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "Request to OpenAI failed.",
       details,

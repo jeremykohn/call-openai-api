@@ -13,6 +13,7 @@ import {
   parseAllowedHosts,
   sanitizeDetails,
 } from "../utils/openai-security";
+import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";
 
@@ -34,14 +35,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
 
   if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI base URL is not allowed.",
     } satisfies ModelsErrorResponse;
   }
 
   if (!apiKey) {
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI API key is not configured.",
     } satisfies ModelsErrorResponse;
@@ -76,7 +77,10 @@ export default defineEventHandler(async (event: H3Event) => {
         apiKey,
       });
 
-      setResponseStatus(event, response.status || 500);
+      setResponseStatus(
+        event,
+        response.status || HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
       return {
         message: "Error: Failed API call, could not get list of OpenAI models",
         details,
@@ -93,7 +97,7 @@ export default defineEventHandler(async (event: H3Event) => {
     return { data: models } satisfies Pick<ModelsResponse, "data">;
   } catch (error) {
     const detailText = error instanceof Error ? error.message : "Unknown error";
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "Error: Failed API call, could not get list of OpenAI models",
       details: sanitizeDetails(detailText, apiKey),
