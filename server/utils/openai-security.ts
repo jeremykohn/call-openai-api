@@ -6,7 +6,18 @@ export const parseAllowedHosts = (
   return (allowedHosts ?? "")
     .split(",")
     .map((host) => host.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((entry) => {
+      // If entry is a full URL, extract hostname
+      // e.g., "https://api.openai.com" -> "api.openai.com"
+      try {
+        const url = new URL(entry);
+        return url.hostname;
+      } catch {
+        // Not a URL, return as-is (e.g., "api.openai.com" or "127.0.0.1:3000")
+        return entry;
+      }
+    });
 };
 
 export const parseBooleanConfig = (
@@ -123,4 +134,24 @@ export const buildOpenAIUrl = (baseUrl: string, path: string): string => {
   const normalizedPath = url.pathname.replace(/\/$/, "");
   url.pathname = `${normalizedPath}/${path}`;
   return url.toString();
+};
+
+export interface OpenAIConfig {
+  apiKey: string | undefined;
+  allowedHosts: string[];
+  allowInsecureHttp: boolean;
+}
+
+export const validateOpenAIConfig = (
+  config: OpenAIConfig,
+): { valid: true } | { valid: false; reason: string } => {
+  if (!config.apiKey?.trim()) {
+    return { valid: false, reason: "OPENAI_API_KEY is required and cannot be empty" };
+  }
+
+  if (config.allowedHosts.length === 0) {
+    return { valid: false, reason: "OPENAI_ALLOWED_HOSTS must contain at least one host" };
+  }
+
+  return { valid: true };
 };

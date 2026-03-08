@@ -4,6 +4,7 @@ import {
   parseBooleanConfig,
   isAllowedHost,
   buildOpenAIUrl,
+  validateOpenAIConfig,
 } from "../../server/utils/openai-security";
 
 describe("OpenAI Security Utils", () => {
@@ -20,6 +21,14 @@ describe("OpenAI Security Utils", () => {
         "api.openai.com",
         "127.0.0.1:3000",
       ]);
+    });
+
+    it("extracts hostname from full URLs", () => {
+      expect(
+        parseAllowedHosts(
+          "https://api.openai.com, http://example.com:8080, 127.0.0.1",
+        ),
+      ).toEqual(["api.openai.com", "example.com", "127.0.0.1"]);
     });
 
     it("returns empty array for undefined input", () => {
@@ -113,6 +122,51 @@ describe("OpenAI Security Utils", () => {
       expect(buildOpenAIUrl("https://api.openai.com/v1/", "responses")).toBe(
         "https://api.openai.com/v1/responses",
       );
+    });
+  });
+
+  describe("validateOpenAIConfig", () => {
+    it("returns valid for complete config", () => {
+      const result = validateOpenAIConfig({
+        apiKey: "sk_test_123",
+        allowedHosts: ["api.openai.com"],
+        allowInsecureHttp: false,
+      });
+
+      expect(result.valid).toBe(true);
+    });
+
+    it("rejects empty API key", () => {
+      const result = validateOpenAIConfig({
+        apiKey: "",
+        allowedHosts: ["api.openai.com"],
+        allowInsecureHttp: false,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.valid === false && result.reason).toContain("OPENAI_API_KEY");
+    });
+
+    it("rejects whitespace-only API key", () => {
+      const result = validateOpenAIConfig({
+        apiKey: "   ",
+        allowedHosts: ["api.openai.com"],
+        allowInsecureHttp: false,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.valid === false && result.reason).toContain("OPENAI_API_KEY");
+    });
+
+    it("rejects empty allowed hosts list", () => {
+      const result = validateOpenAIConfig({
+        apiKey: "sk_test_123",
+        allowedHosts: [],
+        allowInsecureHttp: false,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.valid === false && result.reason).toContain("OPENAI_ALLOWED_HOSTS");
     });
 
     it("preserves query parameters", () => {

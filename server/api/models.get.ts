@@ -10,6 +10,7 @@ import {
   parseBooleanConfig,
   parseAllowedHosts,
   sanitizeDetails,
+  validateOpenAIConfig,
 } from "../utils/openai-security";
 import { HTTP_STATUS } from "../constants/http-status";
 
@@ -17,15 +18,21 @@ const OPENAI_PATH = "models";
 
 export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig();
-  const apiKey = config.openaiApiKey?.trim();
+  const apiKey = config.openaiApiKey?.trim?.();
   const baseUrl = config.openaiBaseUrl;
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
   const allowInsecureHttp = parseBooleanConfig(config.openaiAllowInsecureHttp);
 
-  if (!allowedHosts.length) {
+  const validation = validateOpenAIConfig({
+    apiKey,
+    allowedHosts,
+    allowInsecureHttp,
+  });
+
+  if (!validation.valid) {
     setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
-      message: "OpenAI allowed hosts are not configured.",
+      message: validation.reason,
     } satisfies ModelsErrorResponse;
   }
 
@@ -35,13 +42,6 @@ export default defineEventHandler(async (event: H3Event) => {
     setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI base URL is not allowed.",
-    } satisfies ModelsErrorResponse;
-  }
-
-  if (!apiKey) {
-    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
-    return {
-      message: "OpenAI API key is not configured.",
     } satisfies ModelsErrorResponse;
   }
 

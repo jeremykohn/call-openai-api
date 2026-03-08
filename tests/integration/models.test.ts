@@ -109,7 +109,7 @@ describe("GET /api/models", () => {
     expect(lastRequest.authorization).toBe("Bearer test-key");
   });
 
-  it("returns the models list on success without the object field", async () => {
+  it("returns the models list with object field set to 'list'", async () => {
     mockBody = {
       object: "list",
       data: [
@@ -129,6 +129,7 @@ describe("GET /api/models", () => {
     };
 
     const result = await $fetch<{
+      object: "list";
       data: Array<{
         id: string;
         object: "model";
@@ -137,6 +138,7 @@ describe("GET /api/models", () => {
       }>;
     }>("/api/models");
 
+    expect(result.object).toBe("list");
     expect(result.data).toHaveLength(2);
     expect(result.data[0]).toEqual({
       id: "gpt-test-1",
