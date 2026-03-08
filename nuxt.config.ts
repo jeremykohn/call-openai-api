@@ -11,9 +11,7 @@ export default defineNuxtConfig({
     openaiApiKey: process.env.OPENAI_API_KEY ?? "",
     openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
     openaiAllowedHosts: process.env.OPENAI_ALLOWED_HOSTS ?? "api.openai.com",
-    openaiAllowInsecureHttp:
-      process.env.OPENAI_ALLOW_INSECURE_HTTP ??
-      (process.env.NODE_ENV === "production" ? "false" : "true"),
+    openaiAllowInsecureHttp: process.env.OPENAI_ALLOW_INSECURE_HTTP ?? "false",
   },
   css: ["~/assets/main.css"],
   typescript: {

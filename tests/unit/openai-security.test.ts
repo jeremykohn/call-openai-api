@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseAllowedHosts,
+  parseBooleanConfig,
   isAllowedHost,
   buildOpenAIUrl,
 } from "../../server/utils/openai-security";
@@ -23,6 +24,37 @@ describe("OpenAI Security Utils", () => {
 
     it("returns empty array for undefined input", () => {
       expect(parseAllowedHosts(undefined)).toEqual([]);
+    });
+  });
+
+  describe("parseBooleanConfig", () => {
+    it("parses truthy string variants", () => {
+      expect(parseBooleanConfig("true")).toBe(true);
+      expect(parseBooleanConfig("TRUE")).toBe(true);
+      expect(parseBooleanConfig("1")).toBe(true);
+      expect(parseBooleanConfig("yes")).toBe(true);
+      expect(parseBooleanConfig("on")).toBe(true);
+    });
+
+    it("parses falsy string variants", () => {
+      expect(parseBooleanConfig("false")).toBe(false);
+      expect(parseBooleanConfig("FALSE")).toBe(false);
+      expect(parseBooleanConfig("0")).toBe(false);
+      expect(parseBooleanConfig("no")).toBe(false);
+      expect(parseBooleanConfig("off")).toBe(false);
+      expect(parseBooleanConfig(" ")).toBe(false);
+    });
+
+    it("returns default for unsupported values", () => {
+      expect(parseBooleanConfig("maybe")).toBe(false);
+      expect(parseBooleanConfig("maybe", true)).toBe(true);
+      expect(parseBooleanConfig(undefined, true)).toBe(true);
+      expect(parseBooleanConfig(123, true)).toBe(true);
+    });
+
+    it("returns booleans unchanged", () => {
+      expect(parseBooleanConfig(true)).toBe(true);
+      expect(parseBooleanConfig(false)).toBe(false);
     });
   });
 

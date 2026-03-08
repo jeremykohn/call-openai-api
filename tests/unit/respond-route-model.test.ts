@@ -18,7 +18,8 @@ vi.mock("nitropack/runtime", () => ({
   useRuntimeConfig: () => ({
     openaiApiKey: "test-key",
     openaiBaseUrl: "https://api.openai.test/v1",
-    openaiAllowedHosts: "",
+    openaiAllowedHosts: "api.openai.test",
+    openaiAllowInsecureHttp: "false",
   }),
 }));
 
