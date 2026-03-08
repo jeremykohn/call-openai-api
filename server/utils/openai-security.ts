@@ -12,11 +12,17 @@ export const parseAllowedHosts = (
 export const isAllowedHost = (
   baseUrl: string,
   allowedHosts: string[],
+  options?: { allowInsecureHttp?: boolean },
 ): boolean => {
   try {
     const url = new URL(baseUrl);
 
     if (!["https:", "http:"].includes(url.protocol)) {
+      return false;
+    }
+
+    const allowInsecureHttp = options?.allowInsecureHttp ?? false;
+    if (url.protocol === "http:" && !allowInsecureHttp) {
       return false;
     }
 

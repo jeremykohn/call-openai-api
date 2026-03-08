@@ -36,8 +36,14 @@ export default defineEventHandler(async (event: H3Event) => {
   const apiKey = config.openaiApiKey?.trim();
   const baseUrl = config.openaiBaseUrl;
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
+  const allowInsecureHttp =
+    config.openaiAllowInsecureHttp === true ||
+    config.openaiAllowInsecureHttp === "true";
 
-  if (allowedHosts.length && !isAllowedHost(baseUrl, allowedHosts)) {
+  if (
+    allowedHosts.length &&
+    !isAllowedHost(baseUrl, allowedHosts, { allowInsecureHttp })
+  ) {
     setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI base URL is not allowed.",

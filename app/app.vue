@@ -179,13 +179,14 @@ const handleSubmit = async () => {
       body: requestBody,
     });
 
-    succeed(response.response || "");
+    succeed(response.response);
   } catch (error) {
-    const message = isNetworkFetchError(error)
+    const isNetworkError = isNetworkFetchError(error);
+    const message = isNetworkError
       ? "Unable to reach the server. Please check your connection and try again."
       : getErrorMessage(error, "Request failed.");
 
-    const details = isNetworkFetchError(error)
+    const details = isNetworkError
       ? undefined
       : (getErrorDetails(error) ??
         (error instanceof Error ? error.message : undefined));
