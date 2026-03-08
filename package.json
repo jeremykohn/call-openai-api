@@ -10,12 +10,16 @@
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:integration": "vitest run --config vitest.config.ts --dir tests/integration",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:a11y:unit": "vitest run --config vitest.unit.config.ts tests/unit/app.a11y.test.ts",
+    "test:a11y:e2e": "playwright test tests/e2e/accessibility.spec.ts",
+    "test:a11y": "npm run test:a11y:unit && npm run test:a11y:e2e"
   },
   "dependencies": {
     "nuxt": "^4.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@nuxt/test-utils": "^3.11.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@playwright/test": "^1.49.1",
@@ -28,6 +32,7 @@
     "prettier": "^3.8.1",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vitest-axe": "^0.1.0"
   }
 }

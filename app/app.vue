@@ -135,6 +135,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useHead } from "#imports";
 import { useRequestState } from "./composables/use-request-state";
 import { useModelsState } from "./composables/use-models-state";
 import ModelsSelector from "./components/ModelsSelector.vue";
@@ -145,6 +146,13 @@ import {
   getErrorDetails,
 } from "./utils/type-guards";
 import type { ApiSuccessResponse } from "../types/chat";
+
+useHead({
+  title: "ChatGPT Prompt Tester - Call OpenAI API",
+  htmlAttrs: {
+    lang: "en",
+  },
+});
 
 const prompt = ref("");
 const promptInput = ref<HTMLTextAreaElement | null>(null);

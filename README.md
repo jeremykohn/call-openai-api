@@ -47,6 +47,8 @@ npm run dev
 npm run test:unit
 npm run test:integration
 npm run test:e2e
+npm run test:a11y:unit
+npm run test:a11y:e2e
 ```
 
 If Playwright reports missing system dependencies, install them with:
