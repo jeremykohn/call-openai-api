@@ -29,7 +29,7 @@ describe("ModelsSelector - Accessibility", () => {
     vi.clearAllMocks();
   });
 
-  it("has proper aria-label for the select element", () => {
+  it("uses visible label association for the select element", () => {
     const wrapper = mount(ModelsSelector, {
       props: {
         models: mockModels,
@@ -39,7 +39,7 @@ describe("ModelsSelector - Accessibility", () => {
     });
 
     const select = wrapper.find("[data-testid='models-select']");
-    expect(select.attributes("aria-label")).toBeTruthy();
+    expect(select.attributes("aria-label")).toBeUndefined();
   });
 
   it("associates label with select using for/id", () => {

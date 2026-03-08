@@ -9,6 +9,7 @@ import {
   isAllowedHost,
   parseBooleanConfig,
   parseAllowedHosts,
+  parseInvalidAllowedHosts,
   sanitizeDetails,
   validateOpenAIConfig,
 } from "../utils/openai-security";
@@ -21,12 +22,13 @@ export default defineEventHandler(async (event: H3Event) => {
   const apiKey = config.openaiApiKey?.trim?.();
   const baseUrl = config.openaiBaseUrl;
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
+  const invalidAllowedHosts = parseInvalidAllowedHosts(config.openaiAllowedHosts);
   const allowInsecureHttp = parseBooleanConfig(config.openaiAllowInsecureHttp);
 
   const validation = validateOpenAIConfig({
     apiKey,
     allowedHosts,
-    allowInsecureHttp,
+    invalidAllowedHosts,
   });
 
   if (!validation.valid) {

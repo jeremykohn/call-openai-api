@@ -1,5 +1,59 @@
 import type { OpenAIErrorPayload } from "../types/openai";
 
+const normalizeAllowedHostEntry = (entry: string): string | null => {
+  if (!entry) {
+    return null;
+  }
+
+  if (entry.includes("://")) {
+    try {
+      const url = new URL(entry);
+
+      if (!["https:", "http:"].includes(url.protocol)) {
+        return null;
+      }
+
+      if (
+        url.username ||
+        url.password ||
+        url.pathname !== "/" ||
+        url.search ||
+        url.hash ||
+        !url.host
+      ) {
+        return null;
+      }
+
+      return url.host.toLowerCase();
+    } catch {
+      return null;
+    }
+  }
+
+  if (entry.includes("@") || /[/?#]/.test(entry)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(`https://${entry}`);
+
+    if (
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      !url.host
+    ) {
+      return null;
+    }
+
+    return entry.toLowerCase();
+  } catch {
+    return null;
+  }
+};
+
 export const parseAllowedHosts = (
   allowedHosts: string | undefined,
 ): string[] => {
@@ -7,17 +61,20 @@ export const parseAllowedHosts = (
     .split(",")
     .map((host) => host.trim())
     .filter(Boolean)
-    .map((entry) => {
-      // If entry is a full URL, extract hostname
-      // e.g., "https://api.openai.com" -> "api.openai.com"
-      try {
-        const url = new URL(entry);
-        return url.hostname;
-      } catch {
-        // Not a URL, return as-is (e.g., "api.openai.com" or "127.0.0.1:3000")
-        return entry;
-      }
+    .flatMap((entry) => {
+      const normalized = normalizeAllowedHostEntry(entry);
+      return normalized ? [normalized] : [];
     });
+};
+
+export const parseInvalidAllowedHosts = (
+  allowedHosts: string | undefined,
+): string[] => {
+  return (allowedHosts ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean)
+    .filter((entry) => normalizeAllowedHostEntry(entry) === null);
 };
 
 export const parseBooleanConfig = (
@@ -139,7 +196,7 @@ export const buildOpenAIUrl = (baseUrl: string, path: string): string => {
 export interface OpenAIConfig {
   apiKey: string | undefined;
   allowedHosts: string[];
-  allowInsecureHttp: boolean;
+  invalidAllowedHosts?: string[];
 }
 
 export const validateOpenAIConfig = (
@@ -147,6 +204,13 @@ export const validateOpenAIConfig = (
 ): { valid: true } | { valid: false; reason: string } => {
   if (!config.apiKey?.trim()) {
     return { valid: false, reason: "OPENAI_API_KEY is required and cannot be empty" };
+  }
+
+  if (config.invalidAllowedHosts?.length) {
+    return {
+      valid: false,
+      reason: "OPENAI_ALLOWED_HOSTS contains invalid host entries",
+    };
   }
 
   if (config.allowedHosts.length === 0) {

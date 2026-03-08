@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   parseAllowedHosts,
+  parseInvalidAllowedHosts,
   parseBooleanConfig,
   isAllowedHost,
   buildOpenAIUrl,
@@ -23,16 +24,46 @@ describe("OpenAI Security Utils", () => {
       ]);
     });
 
-    it("extracts hostname from full URLs", () => {
+    it("normalizes full URLs and preserves explicit port", () => {
       expect(
         parseAllowedHosts(
           "https://api.openai.com, http://example.com:8080, 127.0.0.1",
         ),
-      ).toEqual(["api.openai.com", "example.com", "127.0.0.1"]);
+      ).toEqual(["api.openai.com", "example.com:8080", "127.0.0.1"]);
+    });
+
+    it("drops invalid host entries", () => {
+      expect(
+        parseAllowedHosts(
+          "api.openai.com, https://example.com/v1, ftp://bad.example.com",
+        ),
+      ).toEqual(["api.openai.com"]);
     });
 
     it("returns empty array for undefined input", () => {
       expect(parseAllowedHosts(undefined)).toEqual([]);
+    });
+  });
+
+  describe("parseInvalidAllowedHosts", () => {
+    it("returns entries that are malformed or overly specific", () => {
+      expect(
+        parseInvalidAllowedHosts(
+          "api.openai.com, https://example.com/v1, ftp://bad.example.com, user@api.openai.com",
+        ),
+      ).toEqual([
+        "https://example.com/v1",
+        "ftp://bad.example.com",
+        "user@api.openai.com",
+      ]);
+    });
+
+    it("returns an empty array for valid entries", () => {
+      expect(
+        parseInvalidAllowedHosts(
+          "api.openai.com, api.openai.com:443, https://api.openai.com",
+        ),
+      ).toEqual([]);
     });
   });
 
@@ -130,7 +161,7 @@ describe("OpenAI Security Utils", () => {
       const result = validateOpenAIConfig({
         apiKey: "sk_test_123",
         allowedHosts: ["api.openai.com"],
-        allowInsecureHttp: false,
+        invalidAllowedHosts: [],
       });
 
       expect(result.valid).toBe(true);
@@ -140,7 +171,7 @@ describe("OpenAI Security Utils", () => {
       const result = validateOpenAIConfig({
         apiKey: "",
         allowedHosts: ["api.openai.com"],
-        allowInsecureHttp: false,
+        invalidAllowedHosts: [],
       });
 
       expect(result.valid).toBe(false);
@@ -151,7 +182,7 @@ describe("OpenAI Security Utils", () => {
       const result = validateOpenAIConfig({
         apiKey: "   ",
         allowedHosts: ["api.openai.com"],
-        allowInsecureHttp: false,
+        invalidAllowedHosts: [],
       });
 
       expect(result.valid).toBe(false);
@@ -162,11 +193,22 @@ describe("OpenAI Security Utils", () => {
       const result = validateOpenAIConfig({
         apiKey: "sk_test_123",
         allowedHosts: [],
-        allowInsecureHttp: false,
+        invalidAllowedHosts: [],
       });
 
       expect(result.valid).toBe(false);
       expect(result.valid === false && result.reason).toContain("OPENAI_ALLOWED_HOSTS");
+    });
+
+    it("rejects invalid allowed host entries", () => {
+      const result = validateOpenAIConfig({
+        apiKey: "sk_test_123",
+        allowedHosts: ["api.openai.com"],
+        invalidAllowedHosts: ["https://example.com/v1"],
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.valid === false && result.reason).toContain("invalid host entries");
     });
 
     it("preserves query parameters", () => {

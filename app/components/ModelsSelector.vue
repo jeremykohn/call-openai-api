@@ -47,7 +47,6 @@
       data-testid="models-select"
       :value="selectedModelId || ''"
       :disabled="status === 'error' || !hasModels"
-      :aria-label="`Select an AI model${required ? ' (required)' : ''}`"
       :aria-busy="false"
       :aria-invalid="status === 'error' ? 'true' : 'false'"
       :aria-required="required"

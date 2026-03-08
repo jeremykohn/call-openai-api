@@ -4,6 +4,12 @@ import { DEFAULT_MODEL } from "../../shared/constants/models";
 let requestBody: { prompt: string; model?: string };
 let responseStatus = 200;
 let modelsFetchOk = true;
+let runtimeConfig = {
+  openaiApiKey: "test-key",
+  openaiBaseUrl: "https://api.openai.test/v1",
+  openaiAllowedHosts: "api.openai.test",
+  openaiAllowInsecureHttp: "false",
+};
 
 const readBodyMock = vi.fn();
 const setResponseStatusMock = vi.fn();
@@ -15,12 +21,7 @@ vi.mock("h3", () => ({
 }));
 
 vi.mock("nitropack/runtime", () => ({
-  useRuntimeConfig: () => ({
-    openaiApiKey: "test-key",
-    openaiBaseUrl: "https://api.openai.test/v1",
-    openaiAllowedHosts: "api.openai.test",
-    openaiAllowInsecureHttp: "false",
-  }),
+  useRuntimeConfig: () => runtimeConfig,
 }));
 
 vi.mock("../../app/utils/prompt-validation", () => ({
@@ -85,6 +86,12 @@ describe("Server: Model Validation Logic", () => {
     responseStatus = 200;
     modelsFetchOk = true;
     requestBody = { prompt: "Hello" };
+    runtimeConfig = {
+      openaiApiKey: "test-key",
+      openaiBaseUrl: "https://api.openai.test/v1",
+      openaiAllowedHosts: "api.openai.test",
+      openaiAllowInsecureHttp: "false",
+    };
     vi.clearAllMocks();
 
     readBodyMock.mockImplementation(async () => requestBody);
@@ -168,5 +175,17 @@ describe("Server: Model Validation Logic", () => {
       String(url).endsWith("/responses"),
     );
     expect(responsesCall).toBeUndefined();
+  });
+
+  it("returns 500 when allowlist contains invalid entries", async () => {
+    runtimeConfig.openaiAllowedHosts = "api.openai.test, https://example.com/v1";
+
+    const result = await handler({} as never);
+
+    expect(responseStatus).toBe(500);
+    expect(result).toEqual({
+      message: "OPENAI_ALLOWED_HOSTS contains invalid host entries",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
