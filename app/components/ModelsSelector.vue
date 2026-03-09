@@ -86,8 +86,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { OpenAIModel } from "../../types/models";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
+import type { OpenAIModel } from "~~/types/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 
 /**
  * Props for ModelsSelector component.

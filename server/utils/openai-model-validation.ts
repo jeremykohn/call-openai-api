@@ -1,5 +1,5 @@
-import type { OpenAIModel } from "../../types/models";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
+import type { OpenAIModel } from "~~/types/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 import { HTTP_STATUS } from "../constants/http-status";
 import { buildOpenAIUrl } from "./openai-security";
 
