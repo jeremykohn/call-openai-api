@@ -9,6 +9,9 @@ export default defineConfig(
   mergeConfig(sharedConfig, {
     test: {
       environment: "node",
+      fileParallelism: false,
+      maxWorkers: 1,
+      minWorkers: 1,
     },
   }),
 );
