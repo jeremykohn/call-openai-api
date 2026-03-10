@@ -6,7 +6,7 @@ export const useAppHead = () => {
       title: "ChatGPT Prompt Tester - Call OpenAI API",
       htmlAttrs: { lang: "en" },
     });
-  } catch (e) {
+  } catch {
     // Ignore errors in test or non-Nuxt environments
   }
 };

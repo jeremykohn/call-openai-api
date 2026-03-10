@@ -52,8 +52,8 @@
       :aria-required="required"
       :aria-describedby="describedBy"
       :required="required"
-      @change="handleSelectChange"
       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+      @change="handleSelectChange"
     >
       <option value="">
         {{ hasModels ? "Select a model" : "No models available" }}

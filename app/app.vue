@@ -29,7 +29,7 @@
         @submit.prevent="handleSubmit"
       >
         <ModelsSelector
-          v-model:selectedModelId="selectedModelId"
+          v-model:selected-model-id="selectedModelId"
           :models="modelsState.data ?? []"
           :status="modelsState.status"
           :error="modelsState.error ?? null"
@@ -52,7 +52,7 @@
           :aria-describedby="
             validationError ? 'prompt-help prompt-error' : 'prompt-help'
           "
-        ></textarea>
+        />
         <p id="prompt-help" class="text-xs text-slate-500">
           Maximum 4000 characters.
         </p>
@@ -82,7 +82,7 @@
           <span
             class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600"
             aria-hidden="true"
-          ></span>
+          />
           <span class="text-sm font-medium"
             >Waiting for response from ChatGPT...</span
           >
