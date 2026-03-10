@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import ModelsSelector from "../../../app/components/ModelsSelector.vue";
-import type { OpenAIModel } from "../../../types/models";
+import ModelsSelector from "~/components/ModelsSelector.vue";
+import type { OpenAIModel } from "~~/types/models";
 
 /**
  * Unit tests for ModelsSelector component - User Interaction.

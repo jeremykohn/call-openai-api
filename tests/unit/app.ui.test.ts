@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 
 const buildWrapper = async (state: {
   status: string;

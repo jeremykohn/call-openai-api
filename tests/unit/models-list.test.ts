@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useModelsState } from "../../app/composables/use-models-state";
-import type { OpenAIModel } from "../../types/models";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { useModelsState } from "~/composables/use-models-state";
+import type { OpenAIModel } from "~~/types/models";
 
 // Mock the fetch function
 vi.stubGlobal("$fetch", vi.fn());

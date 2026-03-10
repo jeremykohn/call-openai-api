@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePrompt } from "../../app/utils/prompt-validation";
+import { validatePrompt } from "~/utils/prompt-validation";
 
 describe("validatePrompt", () => {
   it("rejects empty prompt", () => {

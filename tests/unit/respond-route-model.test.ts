@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 
 let requestBody: { prompt: string; model?: string };
 let responseStatus = 200;

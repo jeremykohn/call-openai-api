@@ -1,9 +1,14 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import { sharedConfig } from "./vitest.shared.config";
 
-export default defineConfig({
-  test: {
-    environment: "node",
-    globals: true,
-    setupFiles: ["tests/test-setup.ts"],
-  },
-});
+/**
+ * Vitest configuration for integration tests.
+ * Uses Node environment for testing API endpoints and server logic.
+ */
+export default defineConfig(
+  mergeConfig(sharedConfig, {
+    test: {
+      environment: "node",
+    },
+  })
+);

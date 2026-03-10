@@ -3,8 +3,8 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
-import type { ApiSuccessResponse } from "../../types/chat";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
+import type { ApiSuccessResponse } from "~~/types/chat";
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 process.env.OPENAI_API_KEY = "test-key";
 

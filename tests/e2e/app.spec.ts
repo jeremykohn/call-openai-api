@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { DEFAULT_MODEL } from "../../shared/constants/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 
 const mockModels = [
   { id: "gpt-4", created: 1686935002, owned_by: "openai" },
