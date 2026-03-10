@@ -35,11 +35,9 @@ export function isNetworkFetchError(error: unknown): boolean {
   if (error instanceof TypeError) {
     const msg = error.message || "";
     if (
-      msg.includes("Failed to fetch") ||
-      msg.includes("NetworkError") ||
-      msg.includes("network connection") ||
-      msg.includes("Network request failed") ||
-      msg.includes("Load failed")
+      /fetch|network|no response|timed out|failed to connect|load failed/i.test(
+        msg,
+      )
     ) {
       return true;
     }
