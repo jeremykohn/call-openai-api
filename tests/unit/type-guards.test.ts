@@ -44,6 +44,90 @@ describe("Type Guards", () => {
   });
 
   describe("isNetworkFetchError", () => {
+    it("returns true for TypeError with 'Failed to fetch'", () => {
+      const error = new TypeError("Failed to fetch");
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for TypeError with 'NetworkError'", () => {
+      const error = new TypeError("NetworkError: something bad happened");
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for TypeError with 'network connection'", () => {
+      const error = new TypeError("network connection lost");
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for TypeError with 'Network request failed'", () => {
+      const error = new TypeError("Network request failed");
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for TypeError with 'Load failed'", () => {
+      const error = new TypeError("Load failed");
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns false for TypeError with unrelated message", () => {
+      const error = new TypeError("Some other error");
+      expect(isNetworkFetchError(error)).toBe(false);
+    });
+
+    it("returns true for FetchError with type 'system'", () => {
+      const error = { name: "FetchError", type: "system" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with type 'request-timeout'", () => {
+      const error = { type: "request-timeout" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with type 'invalid-json'", () => {
+      const error = { type: "invalid-json" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with code ECONNREFUSED", () => {
+      const error = { code: "ECONNREFUSED" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with cause.code ENOTFOUND", () => {
+      const error = { cause: { code: "ENOTFOUND" } };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with name AbortError", () => {
+      const error = { name: "AbortError" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with cause.name AbortError", () => {
+      const error = { cause: { name: "AbortError" } };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with network keywords in message", () => {
+      const error = { message: "timed out while trying to fetch" };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns true for error with network keywords in cause.message", () => {
+      const error = { cause: { message: "failed to connect to server" } };
+      expect(isNetworkFetchError(error)).toBe(true);
+    });
+
+    it("returns false for error with status", () => {
+      const error = { status: 200, message: "OK" };
+      expect(isNetworkFetchError(error)).toBe(false);
+    });
+
+    it("returns false for error with statusCode", () => {
+      const error = { statusCode: 404, message: "Not found" };
+      expect(isNetworkFetchError(error)).toBe(false);
+    });
     it("returns true for TypeError with fetch keyword", () => {
       const error = new TypeError("fetch failed");
       expect(isNetworkFetchError(error)).toBe(true);

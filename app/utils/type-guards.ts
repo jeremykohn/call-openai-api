@@ -31,8 +31,20 @@ export function isNetworkFetchError(error: unknown): boolean {
     "UND_ERR_CONNECT_TIMEOUT",
   ]);
 
+  // TypeError: Only treat as network error if message matches known fetch/network failure patterns
   if (error instanceof TypeError) {
-    return /fetch|network/i.test(error.message);
+    const msg = error.message || "";
+    if (
+      msg.includes("Failed to fetch") ||
+      msg.includes("NetworkError") ||
+      msg.includes("network connection") ||
+      msg.includes("Network request failed") ||
+      msg.includes("Load failed")
+    ) {
+      return true;
+    }
+    // Otherwise, do not treat all TypeErrors as network errors
+    return false;
   }
 
   if (typeof error === "object" && error !== null) {
@@ -42,7 +54,8 @@ export function isNetworkFetchError(error: unknown): boolean {
       status?: number;
       statusCode?: number;
       code?: string;
-      cause?: { code?: string; name?: string; message?: string };
+      cause?: { code?: string; name?: string; message?: string; type?: string };
+      type?: string;
     };
 
     // If it has a status code, it's an HTTP error, not a network error
@@ -70,10 +83,29 @@ export function isNetworkFetchError(error: unknown): boolean {
       return true;
     }
 
+    // Node fetch: error.name === 'FetchError' && error.type === 'system'
+    if (maybeError.name === "FetchError" && maybeError.type === "system") {
+      return true;
+    }
+    // Node fetch: error.type === 'request-timeout' or 'invalid-json'
+    if (
+      typeof maybeError.type === "string" &&
+      ["request-timeout", "invalid-json"].includes(maybeError.type)
+    ) {
+      return true;
+    }
+
     // Check message for network-related keywords
-    return /fetch|network|no response|timed out|failed to connect/i.test(
-      [maybeError.message, maybeError.cause?.message].filter(Boolean).join(" "),
-    );
+    const msg = [maybeError.message, maybeError.cause?.message]
+      .filter(Boolean)
+      .join(" ");
+    if (
+      /fetch|network|no response|timed out|failed to connect|Failed to fetch|NetworkError|network connection|Network request failed|Load failed/i.test(
+        msg,
+      )
+    ) {
+      return true;
+    }
   }
 
   return false;
