@@ -131,4 +131,80 @@ describe("useModelsState", () => {
     expect(state.value.data).toHaveLength(1);
     expect(state.value.data?.[0]?.id).toBe("gpt-3.5");
   });
+
+  it("ignores stale overlapping fetch responses", async () => {
+    type Deferred<T> = {
+      promise: Promise<T>;
+      resolve: (value: T) => void;
+    };
+
+    const createDeferred = <T>(): Deferred<T> => {
+      let resolvePromise!: (value: T) => void;
+      const promise = new Promise<T>((resolve) => {
+        resolvePromise = resolve;
+      });
+      return { promise, resolve: resolvePromise };
+    };
+
+    const first = createDeferred<{ data: OpenAIModel[] }>();
+    const second = createDeferred<{ data: OpenAIModel[] }>();
+    const third = createDeferred<{ data: OpenAIModel[] }>();
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise)
+      .mockImplementationOnce(() => third.promise);
+
+    vi.stubGlobal("$fetch", mockFetch);
+
+    const { state, fetchModels } = useModelsState();
+
+    const secondCall = fetchModels();
+    const thirdCall = fetchModels();
+
+    second.resolve({
+      data: [
+        {
+          id: "stale-model",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+      ],
+    });
+    await secondCall;
+
+    expect(state.value.status).toBe("loading");
+
+    third.resolve({
+      data: [
+        {
+          id: "latest-model",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+      ],
+    });
+    await thirdCall;
+
+    expect(state.value.status).toBe("success");
+    expect(state.value.data?.[0]?.id).toBe("latest-model");
+
+    first.resolve({
+      data: [
+        {
+          id: "initial-model",
+          object: "model",
+          created: 1686935004,
+          owned_by: "openai",
+        },
+      ],
+    });
+    await Promise.resolve();
+
+    expect(state.value.status).toBe("success");
+    expect(state.value.data?.[0]?.id).toBe("latest-model");
+  });
 });

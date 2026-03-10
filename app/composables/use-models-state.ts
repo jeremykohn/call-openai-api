@@ -47,6 +47,7 @@ type UseModelsStateReturn = {
 export const useModelsState = (): UseModelsStateReturn => {
   // Start as idle if during SSR, loading if client-side (will fetch immediately)
   const isSSR = typeof window === "undefined";
+  let latestRequestId = 0;
   const state: Ref<ModelsState> = ref<ModelsState>({
     status: isSSR ? "idle" : "loading",
     data: null,
@@ -72,6 +73,8 @@ export const useModelsState = (): UseModelsStateReturn => {
    * @throws Will not throw; errors are captured in state.error instead.
    */
   const fetchModels = async (): Promise<void> => {
+    const requestId = ++latestRequestId;
+
     state.value.status = "loading";
     state.value.error = null;
     state.value.errorDetails = null;
@@ -79,11 +82,19 @@ export const useModelsState = (): UseModelsStateReturn => {
     try {
       const response = await $fetch<{ data: OpenAIModel[] }>("/api/models");
 
+      if (requestId !== latestRequestId) {
+        return;
+      }
+
       state.value.status = "success";
       state.value.data = response.data;
       state.value.error = null;
       state.value.errorDetails = null;
     } catch (error) {
+      if (requestId !== latestRequestId) {
+        return;
+      }
+
       state.value.status = "error";
       state.value.data = null;
 
