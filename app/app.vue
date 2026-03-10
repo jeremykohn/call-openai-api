@@ -68,6 +68,7 @@
         <button
           class="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           type="submit"
+          :disabled="state.status === 'loading'"
           :aria-busy="state.status === 'loading'"
         >
           Send
@@ -158,6 +159,10 @@ const { state, start, succeed, fail } = useRequestState();
 const { state: modelsState } = useModelsState();
 
 const handleSubmit = async () => {
+  if (state.value.status === "loading") {
+    return;
+  }
+
   validationError.value = null;
 
   const validation = validatePrompt(prompt.value);

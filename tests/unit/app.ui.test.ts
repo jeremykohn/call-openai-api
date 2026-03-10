@@ -55,6 +55,10 @@ describe("App UI states", () => {
     });
 
     expect(wrapper.text()).toContain("Waiting for response from ChatGPT...");
+
+    const submitButton = wrapper.get("button[type='submit']");
+    expect(submitButton.attributes("disabled")).toBeDefined();
+    expect(submitButton.attributes("aria-busy")).toBe("true");
   });
 
   it("shows the prompt length hint", async () => {
@@ -116,14 +120,17 @@ describe("App submit payload with model selection", () => {
     vi.clearAllMocks();
   });
 
-  const buildSubmitWrapper = async (mockFetch: ReturnType<typeof vi.fn>) => {
+  const buildSubmitWrapper = async (
+    mockFetch: ReturnType<typeof vi.fn>,
+    requestStatus: "idle" | "loading" | "success" | "error" = "idle",
+  ) => {
     vi.resetModules();
     vi.stubGlobal("$fetch", mockFetch);
 
     vi.doMock("../../app/composables/use-request-state", () => ({
       useRequestState: () => ({
         state: ref({
-          status: "idle",
+          status: requestStatus,
           data: null,
           error: null,
           errorDetails: null,
@@ -211,5 +218,15 @@ describe("App submit payload with model selection", () => {
         },
       }),
     );
+  });
+
+  it("does not submit while request is already loading", async () => {
+    const mockFetch = vi.fn();
+    const wrapper = await buildSubmitWrapper(mockFetch, "loading");
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("form").trigger("submit");
+
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
