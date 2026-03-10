@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
+import { clearModelsCache } from "../../server/utils/openai-model-validation";
 
 let requestBody: { prompt: string; model?: string };
 let responseStatus = 200;
@@ -93,6 +94,7 @@ describe("Server: Model Validation Logic", () => {
       openaiAllowInsecureHttp: "false",
     };
     vi.clearAllMocks();
+    clearModelsCache(); // Clear cache between tests
 
     readBodyMock.mockImplementation(async () => requestBody);
     setResponseStatusMock.mockImplementation((_, status: number) => {
@@ -158,6 +160,35 @@ describe("Server: Model Validation Logic", () => {
       model: DEFAULT_MODEL,
       input: "Hello",
     });
+  });
+
+  it("reuses the cached models list across repeated validations", async () => {
+    requestBody = { prompt: "Hello", model: "gpt-4" };
+
+    const firstResult = await handler({} as never);
+
+    requestBody = { prompt: "Hello again", model: "gpt-3.5-turbo" };
+
+    const secondResult = await handler({} as never);
+
+    expect(firstResult).toEqual({
+      response: "Hello from OpenAI",
+      model: "gpt-4",
+    });
+    expect(secondResult).toEqual({
+      response: "Hello from OpenAI",
+      model: "gpt-3.5-turbo",
+    });
+
+    const modelsCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/models"),
+    );
+    const responsesCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/responses"),
+    );
+
+    expect(modelsCalls).toHaveLength(1);
+    expect(responsesCalls).toHaveLength(2);
   });
 
   it("returns 502 when model validation cannot be performed", async () => {
