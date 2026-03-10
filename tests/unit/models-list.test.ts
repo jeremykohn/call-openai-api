@@ -207,4 +207,46 @@ describe("useModelsState", () => {
     expect(state.value.status).toBe("success");
     expect(state.value.data?.[0]?.id).toBe("latest-model");
   });
+
+  it("aborts previous in-flight request on subsequent fetch", async () => {
+    const signals: AbortSignal[] = [];
+
+    const firstDeferred = new Promise<{ data: OpenAIModel[] }>(() => {
+      // Intentionally unresolved to simulate in-flight request
+    });
+
+    const mockFetch = vi
+      .fn()
+      .mockImplementationOnce((_, options?: { signal?: AbortSignal }) => {
+        if (options?.signal) {
+          signals.push(options.signal);
+        }
+        return firstDeferred;
+      })
+      .mockImplementation((_, options?: { signal?: AbortSignal }) => {
+        if (options?.signal) {
+          signals.push(options.signal);
+        }
+        return Promise.resolve({
+          data: [
+            {
+              id: "latest-model",
+              object: "model",
+              created: 1686935003,
+              owned_by: "openai",
+            },
+          ],
+        });
+      });
+
+    vi.stubGlobal("$fetch", mockFetch);
+
+    const { fetchModels } = useModelsState();
+
+    await fetchModels();
+
+    expect(signals).toHaveLength(2);
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
+  });
 });

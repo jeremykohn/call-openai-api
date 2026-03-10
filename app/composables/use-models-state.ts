@@ -48,6 +48,7 @@ export const useModelsState = (): UseModelsStateReturn => {
   // Start as idle if during SSR, loading if client-side (will fetch immediately)
   const isSSR = typeof window === "undefined";
   let latestRequestId = 0;
+  let activeController: AbortController | null = null;
   const state: Ref<ModelsState> = ref<ModelsState>({
     status: isSSR ? "idle" : "loading",
     data: null,
@@ -74,13 +75,17 @@ export const useModelsState = (): UseModelsStateReturn => {
    */
   const fetchModels = async (): Promise<void> => {
     const requestId = ++latestRequestId;
+    activeController?.abort();
+    activeController = new AbortController();
 
     state.value.status = "loading";
     state.value.error = null;
     state.value.errorDetails = null;
 
     try {
-      const response = await $fetch<{ data: OpenAIModel[] }>("/api/models");
+      const response = await $fetch<{ data: OpenAIModel[] }>("/api/models", {
+        signal: activeController.signal,
+      });
 
       if (requestId !== latestRequestId) {
         return;
@@ -92,6 +97,10 @@ export const useModelsState = (): UseModelsStateReturn => {
       state.value.errorDetails = null;
     } catch (error) {
       if (requestId !== latestRequestId) {
+        return;
+      }
+
+      if ((error as { name?: string })?.name === "AbortError") {
         return;
       }
 
