@@ -189,10 +189,7 @@ const handleSubmit = async () => {
       ? "Unable to reach the server. Please check your connection and try again."
       : getErrorMessage(error, "Request failed.");
 
-    const details = isNetworkError
-      ? undefined
-      : (getErrorDetails(error) ??
-        (error instanceof Error ? error.message : undefined));
+    const details = isNetworkError ? undefined : getErrorDetails(error);
 
     fail(message, details);
   }

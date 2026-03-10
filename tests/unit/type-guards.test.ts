@@ -5,7 +5,7 @@ import {
   isApiError,
   getErrorMessage,
   getErrorDetails,
-} from "../../app/utils/type-guards";
+} from "~/utils/type-guards";
 
 describe("Type Guards", () => {
   describe("isErrorWithMessage", () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import ModelsSelector from "~/components/ModelsSelector.vue";
 import type { OpenAIModel } from "~~/types/models";
-import { DEFAULT_MODEL } from "../../../shared/constants/models";
+import { DEFAULT_MODEL } from "~~/shared/constants/models";
 
 /**
  * Unit tests for ModelsSelector component - Accessibility.

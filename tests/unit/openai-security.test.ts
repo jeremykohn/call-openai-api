@@ -6,7 +6,7 @@ import {
   isAllowedHost,
   buildOpenAIUrl,
   validateOpenAIConfig,
-} from "../../server/utils/openai-security";
+} from "~~/server/utils/openai-security";
 
 describe("OpenAI Security Utils", () => {
   describe("parseAllowedHosts", () => {
