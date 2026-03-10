@@ -32,8 +32,8 @@
           v-model:selectedModelId="selectedModelId"
           :models="modelsState.data ?? []"
           :status="modelsState.status"
-          :error="modelsState.error"
-          :error-details="modelsState.errorDetails"
+          :error="modelsState.error ?? null"
+          :error-details="modelsState.errorDetails ?? null"
         />
         <label class="text-sm font-semibold text-slate-700" for="prompt-input"
           >Prompt</label
@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useHead } from "#imports";
+import { useAppHead } from "./composables/use-app-head";
 import { useRequestState } from "./composables/use-request-state";
 import { useModelsState } from "./composables/use-models-state";
 import ModelsSelector from "./components/ModelsSelector.vue";
@@ -147,12 +147,7 @@ import {
 } from "./utils/type-guards";
 import type { ApiSuccessResponse } from "../types/chat";
 
-useHead({
-  title: "ChatGPT Prompt Tester - Call OpenAI API",
-  htmlAttrs: {
-    lang: "en",
-  },
-});
+useAppHead();
 
 const prompt = ref("");
 const promptInput = ref<HTMLTextAreaElement | null>(null);

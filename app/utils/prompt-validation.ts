@@ -1,4 +1,4 @@
-import type { PromptValidationResult } from "../../types/chat";
+import type { PromptValidationResult } from "~~/types/chat";
 
 const EMPTY_PROMPT_MESSAGE = "Please enter a prompt.";
 const MAX_PROMPT_LENGTH = 4000;

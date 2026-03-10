@@ -1,6 +1,6 @@
 import { ref, readonly, computed, type Ref } from "vue";
-import type { OpenAIModel } from "../../types/models";
-import { getErrorMessage, getErrorDetails } from "../utils/type-guards";
+import type { OpenAIModel } from "~~/types/models";
+import { getErrorMessage, getErrorDetails } from "~/utils/type-guards";
 
 /**
  * State structure for models list management.
@@ -45,8 +45,10 @@ type UseModelsStateReturn = {
  * ```
  */
 export const useModelsState = (): UseModelsStateReturn => {
+  // Start as idle if during SSR, loading if client-side (will fetch immediately)
+  const isSSR = typeof window === 'undefined';
   const state: Ref<ModelsState> = ref<ModelsState>({
-    status: "loading", // Start as loading since fetch is triggered immediately
+    status: isSSR ? "idle" : "loading",
     data: null,
     error: null,
     errorDetails: null,
@@ -94,8 +96,10 @@ export const useModelsState = (): UseModelsStateReturn => {
     }
   };
 
-  // Auto-fetch on composable initialization
-  fetchModels();
+  // Auto-fetch on composable initialization (skip during SSR)
+  if (!isSSR) {
+    fetchModels();
+  }
 
   return {
     state: readonly(state),

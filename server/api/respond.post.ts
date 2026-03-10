@@ -1,12 +1,8 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type {
-  ApiErrorResponse,
-  ApiSuccessResponse,
-  PromptRequest,
-} from "../../types/chat";
-import { validatePrompt } from "../../app/utils/prompt-validation";
+import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "~~/types/chat";
+import { validatePrompt } from "~~/app/utils/prompt-validation";
 import {
   buildOpenAIErrorDetails,
   buildOpenAIUrl,

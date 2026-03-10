@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import type { RequestState } from "../../types/chat";
+import type { RequestState } from "~~/types/chat";
 
 const createInitialState = (): RequestState => ({
   status: "idle",
