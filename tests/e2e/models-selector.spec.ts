@@ -26,8 +26,13 @@ test("loads models and allows selection", async ({ page }) => {
 test("shows a loading indicator while models are fetching", async ({
   page,
 }) => {
+  let releaseResponse: (() => void) | undefined;
+  const responseGate = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+
   await page.route("**/api/models", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await responseGate;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -35,10 +40,13 @@ test("shows a loading indicator while models are fetching", async ({
     });
   });
 
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForRequest("**/api/models");
 
   const loadingIndicator = page.getByTestId("loading-indicator");
   await expect(loadingIndicator).toBeVisible();
+
+  releaseResponse?.();
 
   const select = page.getByRole("combobox", { name: "Model" });
   await expect(select).toBeVisible();
