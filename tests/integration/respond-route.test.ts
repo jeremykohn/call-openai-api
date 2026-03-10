@@ -11,6 +11,7 @@ process.env.OPENAI_API_KEY = "test-key";
 let mockStatus = 200;
 let mockBody: unknown = { output_text: "Hello from OpenAI" };
 let lastRequestBody: { model: string; input: string } | null = null;
+let modelsRequestCount = 0;
 
 const mockServer = createServer((request, response) => {
   // Collect request body
@@ -21,6 +22,7 @@ const mockServer = createServer((request, response) => {
 
   request.on("end", () => {
     if (request.url === "/models") {
+      modelsRequestCount += 1;
       // Return mock models list
       response.statusCode = 200;
       response.setHeader("Content-Type", "application/json");
@@ -80,6 +82,7 @@ afterAll(() => {
 describe("POST /api/respond", () => {
   beforeEach(() => {
     lastRequestBody = null;
+    modelsRequestCount = 0;
   });
   it("returns 400 for invalid prompt", async () => {
     try {
@@ -198,5 +201,16 @@ describe("POST /api/respond", () => {
     expect(result).toHaveProperty("response");
     expect(result).toHaveProperty("model");
     expect(result.model).toBe("gpt-3.5-turbo");
+  });
+
+  it("reuses cached models after /api/models fetch", async () => {
+    await $fetch("/api/models");
+
+    await $fetch<ApiSuccessResponse>("/api/respond", {
+      method: "POST",
+      body: { prompt: "Hello", model: "gpt-4" },
+    });
+
+    expect(modelsRequestCount).toBe(1);
   });
 });

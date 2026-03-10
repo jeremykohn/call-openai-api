@@ -110,3 +110,14 @@ export const resolveModel = async (
 export const clearModelsCache = (): void => {
   modelsCache = null;
 };
+
+export const cacheModelsForBaseUrl = (
+  baseUrl: string,
+  models: readonly Pick<OpenAIModel, "id">[],
+): void => {
+  modelsCache = {
+    cacheKey: buildCacheKey(baseUrl),
+    models: models.map((model) => model.id),
+    timestamp: Date.now(),
+  };
+};

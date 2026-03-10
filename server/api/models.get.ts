@@ -13,6 +13,7 @@ import {
   sanitizeDetails,
   validateOpenAIConfig,
 } from "../utils/openai-security";
+import { cacheModelsForBaseUrl } from "../utils/openai-model-validation";
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";
@@ -92,6 +93,8 @@ export default defineEventHandler(async (event: H3Event) => {
       created,
       owned_by,
     }));
+
+    cacheModelsForBaseUrl(baseUrl, models);
 
     return {
       object: "list",
