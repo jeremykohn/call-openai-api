@@ -1,8 +1,8 @@
-import { execSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { execSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-const harper = await import('harper.js');
+const harper = await import("harper.js");
 const linter = new harper.LocalLinter({
   binary: harper.binary,
   dialect: harper.Dialect.American,
@@ -14,17 +14,19 @@ const args = process.argv.slice(2);
 const files = args.length > 0 ? args : getMarkdownFiles();
 
 if (files.length === 0) {
-  console.log('No Markdown files found.');
+  console.log("No Markdown files found.");
   process.exit(0);
 }
 
 for (const file of files) {
   const absolutePath = resolve(file);
-  const text = readFileSync(absolutePath, 'utf8');
-  const lints = (await linter.lint(text)).filter((lint) => !isHeadingCaseSuggestion(lint));
+  const text = readFileSync(absolutePath, "utf8");
+  const lints = (await linter.lint(text)).filter(
+    (lint) => !isHeadingCaseSuggestion(lint),
+  );
   console.log(`---\n${file}`);
   if (lints.length === 0) {
-    console.log('No issues found.');
+    console.log("No issues found.");
     continue;
   }
 
@@ -36,14 +38,16 @@ for (const file of files) {
     console.log(`${line}:${column} ${lint.message()}`);
     const suggestions = lint.suggestions();
     if (suggestions.length > 0) {
-      console.log(`  Suggestions: ${suggestions.map((s) => s.get_replacement_text()).join(' | ')}`);
+      console.log(
+        `  Suggestions: ${suggestions.map((s) => s.get_replacement_text()).join(" | ")}`,
+      );
     }
   }
 }
 
 function getMarkdownFiles() {
   try {
-    const output = execSync("git ls-files '*.md'", { encoding: 'utf8' });
+    const output = execSync("git ls-files '*.md'", { encoding: "utf8" });
     return output
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -54,15 +58,15 @@ function getMarkdownFiles() {
 }
 
 async function importDictionary(lintInstance) {
-  const dictionaryPath = resolve('scripts/harper-words.txt');
+  const dictionaryPath = resolve("scripts/harper-words.txt");
   if (!existsSync(dictionaryPath)) {
     return;
   }
-  const content = readFileSync(dictionaryPath, 'utf8');
+  const content = readFileSync(dictionaryPath, "utf8");
   const words = content
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith('#'));
+    .filter((line) => line.length > 0 && !line.startsWith("#"));
   if (words.length > 0) {
     await lintInstance.importWords(words);
   }
@@ -71,7 +75,7 @@ async function importDictionary(lintInstance) {
 function getLineStarts(text) {
   const starts = [0];
   for (let index = 0; index < text.length; index += 1) {
-    if (text[index] === '\n') {
+    if (text[index] === "\n") {
       starts.push(index + 1);
     }
   }
@@ -95,5 +99,5 @@ function getLineColumn(lineStarts, index) {
 }
 
 function isHeadingCaseSuggestion(lint) {
-  return lint.message().toLowerCase().includes('title case in headings');
+  return lint.message().toLowerCase().includes("title case in headings");
 }

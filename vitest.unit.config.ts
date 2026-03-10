@@ -13,5 +13,5 @@ export default defineConfig(
       environment: "happy-dom",
       include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.ui.test.ts"],
     },
-  })
+  }),
 );

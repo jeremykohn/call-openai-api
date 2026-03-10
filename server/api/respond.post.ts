@@ -1,7 +1,11 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "~~/types/chat";
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  PromptRequest,
+} from "~~/types/chat";
 import { validatePrompt } from "~~/app/utils/prompt-validation";
 import {
   buildOpenAIErrorDetails,
@@ -35,7 +39,9 @@ export default defineEventHandler(async (event: H3Event) => {
   const apiKey = config.openaiApiKey?.trim?.();
   const baseUrl = config.openaiBaseUrl;
   const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
-  const invalidAllowedHosts = parseInvalidAllowedHosts(config.openaiAllowedHosts);
+  const invalidAllowedHosts = parseInvalidAllowedHosts(
+    config.openaiAllowedHosts,
+  );
   const allowInsecureHttp = parseBooleanConfig(config.openaiAllowInsecureHttp);
 
   const configValidation = validateOpenAIConfig({
@@ -51,9 +57,7 @@ export default defineEventHandler(async (event: H3Event) => {
     } satisfies ApiErrorResponse;
   }
 
-  if (
-    !isAllowedHost(baseUrl, allowedHosts, { allowInsecureHttp })
-  ) {
+  if (!isAllowedHost(baseUrl, allowedHosts, { allowInsecureHttp })) {
     setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "OpenAI base URL is not allowed.",

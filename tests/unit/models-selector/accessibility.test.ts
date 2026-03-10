@@ -81,9 +81,7 @@ describe("ModelsSelector - Accessibility", () => {
     });
 
     const select = wrapper.find("[data-testid='models-select']");
-    const loadingIndicator = wrapper.find(
-      "[data-testid='loading-indicator']",
-    );
+    const loadingIndicator = wrapper.find("[data-testid='loading-indicator']");
 
     expect(select.exists()).toBe(false);
     expect(loadingIndicator.exists()).toBe(true);

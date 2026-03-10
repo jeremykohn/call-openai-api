@@ -100,15 +100,15 @@ describe("OpenAI Security Utils", () => {
 
   describe("isAllowedHost", () => {
     it("accepts matching HTTPS hostname", () => {
-      expect(isAllowedHost("https://api.openai.com/v1", ["api.openai.com"])).toBe(
-        true,
-      );
+      expect(
+        isAllowedHost("https://api.openai.com/v1", ["api.openai.com"]),
+      ).toBe(true);
     });
 
     it("rejects HTTP by default", () => {
-      expect(isAllowedHost("http://api.openai.com/v1", ["api.openai.com"])).toBe(
-        false,
-      );
+      expect(
+        isAllowedHost("http://api.openai.com/v1", ["api.openai.com"]),
+      ).toBe(false);
     });
 
     it("accepts HTTP when explicitly allowed", () => {
@@ -121,13 +121,17 @@ describe("OpenAI Security Utils", () => {
 
     it("matches allowlist entries with host and port", () => {
       expect(
-        isAllowedHost("https://api.openai.com:8443/v1", ["api.openai.com:8443"]),
+        isAllowedHost("https://api.openai.com:8443/v1", [
+          "api.openai.com:8443",
+        ]),
       ).toBe(true);
     });
 
     it("rejects credentialed URLs", () => {
       expect(
-        isAllowedHost("https://user:pass@api.openai.com/v1", ["api.openai.com"]),
+        isAllowedHost("https://user:pass@api.openai.com/v1", [
+          "api.openai.com",
+        ]),
       ).toBe(false);
     });
 
@@ -175,7 +179,9 @@ describe("OpenAI Security Utils", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.valid === false && result.reason).toContain("OPENAI_API_KEY");
+      expect(result.valid === false && result.reason).toContain(
+        "OPENAI_API_KEY",
+      );
     });
 
     it("rejects whitespace-only API key", () => {
@@ -186,7 +192,9 @@ describe("OpenAI Security Utils", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.valid === false && result.reason).toContain("OPENAI_API_KEY");
+      expect(result.valid === false && result.reason).toContain(
+        "OPENAI_API_KEY",
+      );
     });
 
     it("rejects empty allowed hosts list", () => {
@@ -197,7 +205,9 @@ describe("OpenAI Security Utils", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.valid === false && result.reason).toContain("OPENAI_ALLOWED_HOSTS");
+      expect(result.valid === false && result.reason).toContain(
+        "OPENAI_ALLOWED_HOSTS",
+      );
     });
 
     it("rejects invalid allowed host entries", () => {
@@ -208,7 +218,9 @@ describe("OpenAI Security Utils", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.valid === false && result.reason).toContain("invalid host entries");
+      expect(result.valid === false && result.reason).toContain(
+        "invalid host entries",
+      );
     });
 
     it("preserves query parameters", () => {

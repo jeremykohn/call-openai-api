@@ -1,4 +1,4 @@
-import { useHead } from '#app';
+import { useHead } from "#app";
 
 export const useAppHead = () => {
   try {

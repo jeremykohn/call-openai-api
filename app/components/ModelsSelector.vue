@@ -68,7 +68,8 @@
       id="models-select-help"
       class="text-xs text-slate-500"
     >
-      Uses <code class="font-mono">{{ DEFAULT_MODEL }}</code> by default if none is selected.
+      Uses <code class="font-mono">{{ DEFAULT_MODEL }}</code> by default if none
+      is selected.
     </p>
 
     <!-- Error Message -->

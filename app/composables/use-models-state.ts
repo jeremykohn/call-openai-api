@@ -46,7 +46,7 @@ type UseModelsStateReturn = {
  */
 export const useModelsState = (): UseModelsStateReturn => {
   // Start as idle if during SSR, loading if client-side (will fetch immediately)
-  const isSSR = typeof window === 'undefined';
+  const isSSR = typeof window === "undefined";
   const state: Ref<ModelsState> = ref<ModelsState>({
     status: isSSR ? "idle" : "loading",
     data: null,

@@ -178,7 +178,8 @@ describe("Server: Model Validation Logic", () => {
   });
 
   it("returns 500 when allowlist contains invalid entries", async () => {
-    runtimeConfig.openaiAllowedHosts = "api.openai.test, https://example.com/v1";
+    runtimeConfig.openaiAllowedHosts =
+      "api.openai.test, https://example.com/v1";
 
     const result = await handler({} as never);
 

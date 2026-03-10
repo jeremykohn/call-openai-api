@@ -203,7 +203,10 @@ export const validateOpenAIConfig = (
   config: OpenAIConfig,
 ): { valid: true } | { valid: false; reason: string } => {
   if (!config.apiKey?.trim()) {
-    return { valid: false, reason: "OPENAI_API_KEY is required and cannot be empty" };
+    return {
+      valid: false,
+      reason: "OPENAI_API_KEY is required and cannot be empty",
+    };
   }
 
   if (config.invalidAllowedHosts?.length) {
@@ -214,7 +217,10 @@ export const validateOpenAIConfig = (
   }
 
   if (config.allowedHosts.length === 0) {
-    return { valid: false, reason: "OPENAI_ALLOWED_HOSTS must contain at least one host" };
+    return {
+      valid: false,
+      reason: "OPENAI_ALLOWED_HOSTS must contain at least one host",
+    };
   }
 
   return { valid: true };

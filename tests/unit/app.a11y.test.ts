@@ -18,9 +18,8 @@ afterEach(() => {
 
 describe("Accessibility (axe) - unit", () => {
   it("has no detectable axe violations for ModelsSelector in success state", async () => {
-    const { default: ModelsSelector } = await import(
-      "../../app/components/ModelsSelector.vue"
-    );
+    const { default: ModelsSelector } =
+      await import("../../app/components/ModelsSelector.vue");
 
     const wrapper = mount(ModelsSelector, {
       props: {
