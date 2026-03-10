@@ -129,5 +129,9 @@ export function getErrorDetails(error: unknown): string | undefined {
     return error.data?.details;
   }
 
+  if (error instanceof Error) {
+    return error.message;
+  }
+
   return undefined;
 }

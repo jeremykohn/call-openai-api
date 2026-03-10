@@ -167,8 +167,11 @@ describe("Type Guards", () => {
       expect(getErrorDetails(error)).toBeUndefined();
     });
 
-    it("returns undefined for non-API errors", () => {
-      expect(getErrorDetails(new Error("Test"))).toBeUndefined();
+    it("returns Error.message for non-API Error instances", () => {
+      expect(getErrorDetails(new Error("Test"))).toBe("Test");
+    });
+
+    it("returns undefined for non-API non-Error values", () => {
       expect(getErrorDetails({ message: "Test" })).toBeUndefined();
       expect(getErrorDetails(null)).toBeUndefined();
     });
