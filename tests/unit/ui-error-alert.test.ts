@@ -18,6 +18,18 @@ describe("UiErrorAlert", () => {
     expect(alert.text()).toContain("status: 401");
   });
 
+  it("renders the alert with a stable container id when provided", () => {
+    const wrapper = mount(UiErrorAlert, {
+      props: {
+        containerId: "prompt-error",
+        message: "Prompt is required.",
+      },
+    });
+
+    const alert = wrapper.get("#prompt-error[role='alert']");
+    expect(alert.text()).toContain("Prompt is required.");
+  });
+
   it("does not render details when not provided", () => {
     const wrapper = mount(UiErrorAlert, {
       props: {
@@ -82,12 +94,40 @@ describe("UiErrorAlert", () => {
 
     const detailsToggle = wrapper.get("[data-testid='details-toggle']");
 
-    await detailsToggle.trigger("click");
-    expect(wrapper.text()).toContain("Hide details");
-    expect(wrapper.text()).toContain("status: 401");
+    expect(detailsToggle.attributes("type")).toBe("button");
+    expect(detailsToggle.attributes("aria-expanded")).toBe("false");
+    expect(detailsToggle.text()).toBe("Show details");
 
     await detailsToggle.trigger("click");
-    expect(wrapper.text()).toContain("Show details");
+    expect(detailsToggle.text()).toBe("Hide details");
+    expect(wrapper.text()).toContain("status: 401");
+    expect(detailsToggle.attributes("aria-expanded")).toBe("true");
+
+    await detailsToggle.trigger("click");
+    expect(detailsToggle.text()).toBe("Show details");
     expect(wrapper.text()).not.toContain("status: 401");
+    expect(detailsToggle.attributes("aria-expanded")).toBe("false");
+  });
+
+  it("renders retry as an accessible button", async () => {
+    const wrapper = mount(UiErrorAlert, {
+      attachTo: document.body,
+      props: {
+        message: "Failed to fetch models",
+        showRetry: true,
+      },
+    });
+
+    try {
+      const retryButton = wrapper.get("[data-testid='retry-button']");
+      expect(retryButton.attributes("type")).toBe("button");
+      expect(retryButton.text()).toBe("Try again");
+
+      const retryButtonElement = retryButton.element as HTMLButtonElement;
+      retryButtonElement.focus();
+      expect(document.activeElement).toBe(retryButtonElement);
+    } finally {
+      wrapper.unmount();
+    }
   });
 });
