@@ -50,9 +50,7 @@ test.describe("Accessibility (axe) - e2e", () => {
     await page.waitForLoadState("networkidle");
     await page.getByLabel("Prompt").fill("Hello");
     await page.getByRole("button", { name: "Send" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Something went wrong" }),
-    ).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText("Something went wrong");
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa"])
