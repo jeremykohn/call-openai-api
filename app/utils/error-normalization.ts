@@ -4,6 +4,7 @@ import {
   isApiError,
   isNetworkFetchError,
 } from "./type-guards";
+import { sanitizeOptionalErrorText, sanitizeErrorText } from "./error-sanitization";
 
 export type UiErrorCategory = "network" | "api" | "unknown";
 
@@ -32,8 +33,10 @@ export const normalizeUiError = (error: unknown): NormalizedUiError => {
   if (isApiError(error)) {
     return {
       category: "api",
-      message: getErrorMessage(error, API_ERROR_FALLBACK_MESSAGE),
-      details: getErrorDetails(error),
+      message: sanitizeErrorText(
+        getErrorMessage(error, API_ERROR_FALLBACK_MESSAGE),
+      ),
+      details: sanitizeOptionalErrorText(getErrorDetails(error)),
     };
   }
 
@@ -41,7 +44,7 @@ export const normalizeUiError = (error: unknown): NormalizedUiError => {
     return {
       category: "unknown",
       message: UNKNOWN_ERROR_MESSAGE,
-      details: error.message,
+      details: sanitizeOptionalErrorText(error.message),
     };
   }
 

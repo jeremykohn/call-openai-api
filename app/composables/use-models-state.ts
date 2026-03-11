@@ -1,6 +1,7 @@
 import { ref, readonly, type Ref } from "vue";
 import type { OpenAIModel } from "~~/types/models";
 import { normalizeUiError } from "~/utils/error-normalization";
+import { logNormalizedUiError } from "~/utils/error-logging";
 
 /**
  * State structure for models list management.
@@ -94,6 +95,7 @@ export const useModelsState = (): UseModelsStateReturn => {
       state.value.data = null;
 
       const normalizedError = normalizeUiError(error);
+      logNormalizedUiError(normalizedError, { source: "models" });
       state.value.error = normalizedError.message;
       state.value.errorDetails = normalizedError.details ?? null;
     }

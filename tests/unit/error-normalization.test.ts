@@ -59,4 +59,29 @@ describe("normalizeUiError", () => {
       details: undefined,
     });
   });
+
+  it("sanitizes API error details before surfacing in UI", () => {
+    const result = normalizeUiError({
+      data: {
+        message: "Invalid API key",
+        details: "Authorization: Bearer sk-secret_1234567890",
+      },
+    });
+
+    expect(result.category).toBe("api");
+    expect(result.message).toBe("Invalid API key");
+    expect(result.details).not.toContain("sk-secret_1234567890");
+    expect(result.details).toContain("[REDACTED]");
+  });
+
+  it("sanitizes unknown error details before surfacing in UI", () => {
+    const result = normalizeUiError(
+      new Error("Request failed with key sk-secret_1234567890"),
+    );
+
+    expect(result.category).toBe("unknown");
+    expect(result.message).toBe(UNKNOWN_ERROR_MESSAGE);
+    expect(result.details).not.toContain("sk-secret_1234567890");
+    expect(result.details).toContain("[REDACTED]");
+  });
 });

@@ -145,6 +145,7 @@ import {
   normalizeUiError,
   UNKNOWN_ERROR_MESSAGE,
 } from "./utils/error-normalization";
+import { logNormalizedUiError } from "./utils/error-logging";
 import type { ApiSuccessResponse } from "../types/chat";
 
 useAppHead();
@@ -189,6 +190,7 @@ const handleSubmit = async () => {
     succeed(response.response);
   } catch (error) {
     const normalizedError = normalizeUiError(error);
+    logNormalizedUiError(normalizedError, { source: "respond" });
     fail(normalizedError.message, normalizedError.details);
   }
 };
