@@ -100,17 +100,13 @@
           </p>
         </div>
 
-        <div
+        <UiErrorAlert
           v-else-if="state.status === 'error'"
-          class="grid gap-3 rounded-2xl border border-red-200 bg-red-50/80 p-6 text-red-900 shadow-sm"
-          role="alert"
-        >
-          <h2 class="text-lg font-semibold">Something went wrong</h2>
-          <p class="text-sm text-red-800">{{ state.error }}</p>
-          <p v-if="state.errorDetails" class="text-sm text-red-700">
-            <span class="font-semibold">Details:</span> {{ state.errorDetails }}
-          </p>
-        </div>
+          title="Something went wrong"
+          :message="state.error || UNKNOWN_ERROR_MESSAGE"
+          :details="state.errorDetails ?? undefined"
+          class="rounded-2xl bg-red-50/80 p-6 shadow-sm"
+        />
       </section>
     </main>
 
@@ -141,8 +137,12 @@ import { useAppHead } from "./composables/use-app-head";
 import { useRequestState } from "./composables/use-request-state";
 import { useModelsState } from "./composables/use-models-state";
 import ModelsSelector from "./components/ModelsSelector.vue";
+import UiErrorAlert from "./components/UiErrorAlert.vue";
 import { validatePrompt } from "./utils/prompt-validation";
-import { normalizeUiError } from "./utils/error-normalization";
+import {
+  normalizeUiError,
+  UNKNOWN_ERROR_MESSAGE,
+} from "./utils/error-normalization";
 import type { ApiSuccessResponse } from "../types/chat";
 
 useAppHead();

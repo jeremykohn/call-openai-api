@@ -72,23 +72,17 @@
     </p>
 
     <!-- Error Message -->
-    <div
+    <UiErrorAlert
       v-if="status === 'error' && error"
-      id="models-select-error"
-      role="alert"
-      class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 border border-red-200"
-    >
-      <p class="font-semibold">{{ error }}</p>
-      <p v-if="errorDetails" class="mt-1 text-red-700">{{ errorDetails }}</p>
-      <button
-        type="button"
-        data-testid="retry-button"
-        class="mt-2 text-sm font-semibold underline hover:text-red-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-        @click="emit('retry')"
-      >
-        Try again
-      </button>
-    </div>
+      container-id="models-select-error"
+      :message="error"
+      :details="errorDetails ?? undefined"
+      :show-retry="true"
+      retry-label="Try again"
+      retry-button-test-id="retry-button"
+      class="mt-2"
+      @retry="emit('retry')"
+    />
   </div>
 </template>
 
@@ -96,6 +90,7 @@
 import { computed } from "vue";
 import type { OpenAIModel } from "~~/types/models";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
+import UiErrorAlert from "./UiErrorAlert.vue";
 
 /**
  * Props for ModelsSelector component.
