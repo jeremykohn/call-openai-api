@@ -14,6 +14,7 @@ import {
   validateOpenAIConfig,
 } from "../utils/openai-security";
 import { cacheModelsForBaseUrl } from "../utils/openai-model-validation";
+import { filterResponsesApiSupportedModels } from "../utils/openai-model-support";
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";
@@ -87,12 +88,13 @@ export default defineEventHandler(async (event: H3Event) => {
       } satisfies ModelsErrorResponse;
     }
 
-    const models = (payload.data ?? []).map(({ id, created, owned_by }) => ({
+    const upstreamModels = (payload.data ?? []).map(({ id, created, owned_by }) => ({
       id,
       object: "model" as const,
       created,
       owned_by,
     }));
+    const models = filterResponsesApiSupportedModels(upstreamModels);
 
     cacheModelsForBaseUrl(baseUrl, models);
 

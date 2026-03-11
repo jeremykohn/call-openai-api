@@ -4,6 +4,7 @@ A simple Nuxt 4 app that sends a prompt to the OpenAI Responses API, shows a loa
 
 Notes:
 - Prompts are limited to 4000 characters.
+- The model dropdown only shows models compatible with the OpenAI Responses API (for example, transcription-only models are filtered out).
 
 ## Prerequisites
 - Node.js 20+

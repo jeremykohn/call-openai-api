@@ -109,7 +109,7 @@ describe("GET /api/models", () => {
     expect(lastRequest.authorization).toBe("Bearer test-key");
   });
 
-  it("returns the models list with object field set to 'list'", async () => {
+  it("returns only Responses API-supported models with object field set to 'list'", async () => {
     mockBody = {
       object: "list",
       data: [
@@ -123,6 +123,12 @@ describe("GET /api/models", () => {
           id: "gpt-test-2",
           object: "model",
           created: 1686935003,
+          owned_by: "openai",
+        },
+        {
+          id: "gpt-4o-mini-transcribe-2025-12-15",
+          object: "model",
+          created: 1686935004,
           owned_by: "openai",
         },
       ],
@@ -140,6 +146,10 @@ describe("GET /api/models", () => {
 
     expect(result.object).toBe("list");
     expect(result.data).toHaveLength(2);
+    expect(result.data.map((model) => model.id)).toEqual([
+      "gpt-test-1",
+      "gpt-test-2",
+    ]);
     expect(result.data[0]).toEqual({
       id: "gpt-test-1",
       object: "model",
