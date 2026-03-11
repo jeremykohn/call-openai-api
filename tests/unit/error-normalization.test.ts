@@ -4,7 +4,7 @@ import {
   NETWORK_ERROR_MESSAGE,
   UNKNOWN_ERROR_MESSAGE,
   normalizeUiError,
-} from "~/utils/error-normalization";
+} from "../../app/utils/error-normalization";
 
 describe("normalizeUiError", () => {
   it("categorizes network errors and uses canonical network message", () => {
