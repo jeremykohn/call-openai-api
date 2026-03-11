@@ -45,27 +45,6 @@ describe("ModelsSelector - User Interaction", () => {
     expect(updateEmitted?.[0]).toEqual(["gpt-3.5-turbo"]);
   });
 
-  it("emits model-selected event with full model object", async () => {
-    const wrapper = mount(ModelsSelector, {
-      props: {
-        models: mockModels,
-        selectedModelId: "gpt-4",
-        status: "success",
-      },
-    });
-
-    const select = wrapper.find("[data-testid='models-select']");
-    await select.setValue("gpt-3.5-turbo");
-
-    const modelSelectedEmitted = wrapper.emitted("model-selected");
-    expect(modelSelectedEmitted).toBeTruthy();
-    const emittedModel = modelSelectedEmitted?.[0]?.[0] as
-      | OpenAIModel
-      | undefined;
-    expect(emittedModel?.id).toBe("gpt-3.5-turbo");
-    expect(emittedModel?.created).toBe(1677649963);
-  });
-
   it("does not emit events when select is disabled (error state)", async () => {
     const wrapper = mount(ModelsSelector, {
       props: {
@@ -96,8 +75,5 @@ describe("ModelsSelector - User Interaction", () => {
     const updateEmitted = wrapper.emitted("update:selectedModelId");
     expect(updateEmitted).toBeTruthy();
     expect(updateEmitted?.[0]).toEqual([null]);
-
-    const modelSelectedEmitted = wrapper.emitted("model-selected");
-    expect(modelSelectedEmitted).toBeFalsy();
   });
 });

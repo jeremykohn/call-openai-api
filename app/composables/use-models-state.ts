@@ -1,4 +1,4 @@
-import { ref, readonly, computed, type Ref } from "vue";
+import { ref, readonly, type Ref } from "vue";
 import type { OpenAIModel } from "~~/types/models";
 import { getErrorMessage, getErrorDetails } from "~/utils/type-guards";
 
@@ -20,10 +20,6 @@ type UseModelsStateReturn = {
   state: Readonly<Ref<ModelsState>>;
   /** Function to manually trigger models fetch */
   fetchModels: () => Promise<void>;
-  /** Computed property indicating if data is loading */
-  isLoading: Readonly<Ref<boolean>>;
-  /** Computed property indicating if an error occurred */
-  hasError: Readonly<Ref<boolean>>;
 };
 
 /**
@@ -34,10 +30,10 @@ type UseModelsStateReturn = {
  *
  * Fetch is automatically triggered when the composable is initialized.
  *
- * @returns Object containing reactive state, fetchModels function, and computed flags
+ * @returns Object containing reactive state and fetchModels function
  * @example
  * ```ts
- * const { state, fetchModels, isLoading, hasError } = useModelsState();
+ * const { state, fetchModels } = useModelsState();
  *
  * if (state.value.status === 'success') {
  *   // Models are available in state.value.data
@@ -55,16 +51,6 @@ export const useModelsState = (): UseModelsStateReturn => {
     error: null,
     errorDetails: null,
   });
-
-  /**
-   * Computed property: indicates if fetch is in progress.
-   */
-  const isLoading = computed(() => state.value.status === "loading");
-
-  /**
-   * Computed property: indicates if fetch resulted in an error.
-   */
-  const hasError = computed(() => state.value.status === "error");
 
   /**
    * Fetches the models list from the server API.
@@ -124,7 +110,5 @@ export const useModelsState = (): UseModelsStateReturn => {
   return {
     state: readonly(state),
     fetchModels,
-    isLoading: readonly(isLoading),
-    hasError: readonly(hasError),
   };
 };

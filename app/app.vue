@@ -34,6 +34,7 @@
           :status="modelsState.status"
           :error="modelsState.error ?? null"
           :error-details="modelsState.errorDetails ?? null"
+          @retry="fetchModels"
         />
         <label class="text-sm font-semibold text-slate-700" for="prompt-input"
           >Prompt</label
@@ -156,7 +157,7 @@ const validationError = ref<string | null>(null);
 const selectedModelId = ref<string | null>(null);
 
 const { state, start, succeed, fail } = useRequestState();
-const { state: modelsState } = useModelsState();
+const { state: modelsState, fetchModels } = useModelsState();
 
 const handleSubmit = async () => {
   if (state.value.status === "loading") {

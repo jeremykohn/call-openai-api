@@ -73,4 +73,47 @@ describe("ModelsSelector - Error Handling", () => {
     const errorElement = wrapper.find("[role='alert']");
     expect(errorElement.exists()).toBe(false);
   });
+
+  it("renders a retry button in the error block", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: [],
+        selectedModelId: null,
+        status: "error",
+        error: "Failed to fetch models",
+      },
+    });
+
+    const retryButton = wrapper.find("[data-testid='retry-button']");
+    expect(retryButton.exists()).toBe(true);
+    expect(retryButton.text()).toBe("Try again");
+  });
+
+  it("emits retry event when retry button is clicked", async () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: [],
+        selectedModelId: null,
+        status: "error",
+        error: "Failed to fetch models",
+      },
+    });
+
+    await wrapper.find("[data-testid='retry-button']").trigger("click");
+
+    expect(wrapper.emitted("retry")).toBeTruthy();
+    expect(wrapper.emitted("retry")).toHaveLength(1);
+  });
+
+  it("does not render retry button when status is not error", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: mockModels,
+        selectedModelId: "gpt-4",
+        status: "success",
+      },
+    });
+
+    expect(wrapper.find("[data-testid='retry-button']").exists()).toBe(false);
+  });
 });
