@@ -134,25 +134,60 @@ Conclude with cleanup and verification so behavior is consistent, tested, and do
 - **Refactor:** Reduce complexity and ensure readability/self-explanatory code.
 
 ### Tasks
-1. Remove dead/duplicate error handling branches superseded by normalized paths.
-2. Ensure utility/function names reflect domain intent and avoid ambiguous semantics.
-3. Update README or relevant docs with the new error behavior and any UI details behavior.
-4. Run full test matrix: unit, integration, E2E, and accessibility checks.
-5. Perform final pass for WCAG-aligned semantics and consistent message copy.
-6. Prepare final change summary mapping acceptance criteria to test evidence.
+1. ✅ Remove dead/duplicate error handling branches superseded by normalized paths.
+2. ✅ Ensure utility/function names reflect domain intent and avoid ambiguous semantics.
+3. ✅ Update README or relevant docs with the new error behavior and any UI details behavior.
+4. ✅ Run full test matrix: unit, integration, E2E, and accessibility checks.
+5. ✅ Perform final pass for WCAG-aligned semantics and consistent message copy.
+6. ✅ Prepare final change summary mapping acceptance criteria to test evidence.
 
 ---
 
-## Test Matrix (Planned)
-- **Unit tests:** error categorization, normalization, sanitization, message selection, details behavior.
-- **Integration tests:** server route failure mapping + client-consumable payload consistency.
-- **E2E tests:** end-user messaging and accessibility semantics across full flows.
-- **Accessibility tests:** maintain existing a11y checks and add assertions for error announcements.
+## Test Matrix (Final — all green as of 2026-03-11)
 
-## Acceptance Criteria Mapping
-1. **All error states categorized and displayed clearly:** covered by Phase 1 + Phase 2 unit/component tests and Phase 5 E2E tests.
-2. **UI consistency + WCAG AA intent:** covered by Phase 2 pattern standardization + Phase 5 accessibility assertions.
-3. **Comprehensive tests for all error scenarios:** covered by Phase 1/4/5 matrix and final verification in Phase 6.
+| Suite | Runner | Files | Tests |
+|---|---|---|---|
+| Unit | Vitest | 20 | 172 |
+| Integration | Vitest | 2 | 16 |
+| E2E | Playwright | 3 | 13 |
+| Accessibility (unit) | vitest-axe | 1 | 2 |
+| Accessibility (E2E) | axe-core/playwright | 1 | 2 |
+| **Total** | | **27** | **205** |
+
+## Acceptance Criteria → Test Evidence
+
+### AC 1: All error states are categorized and displayed with clear, accessible messages
+
+| Criterion | Evidence |
+|---|---|
+| `network` category detected and correct message shown | `tests/unit/error-normalization.test.ts` — "categorizes network errors and uses canonical network message"; `tests/e2e/app.spec.ts` — "shows network error message when request fails due to connection" |
+| `api` category detected, OpenAI message surfaced, details sanitized | `tests/unit/error-normalization.test.ts` — "categorizes API errors and surfaces specific API message", "sanitizes API error details before surfacing in UI"; `tests/integration/respond-route.test.ts` — API failure integration; `tests/e2e/app.spec.ts` — "shows API error message with safe details on OpenAI API failure" |
+| `unknown` category fallback for unrecognized errors | `tests/unit/error-normalization.test.ts` — "categorizes unknown errors", "handles nullish and non-object errors with unknown fallback"; `tests/e2e/app.spec.ts` — "shows unknown fallback message for unclassified errors" |
+| Models-loading errors follow same contract | `tests/unit/models-selector/error-handling.test.ts` (7 tests); `tests/e2e/models-selector.spec.ts` — "shows error message and retry button when model list fails to load" |
+| Type guards underpin categorization | `tests/unit/type-guards.test.ts` — 14 tests for `isErrorWithMessage`, `isNetworkFetchError`, `isApiError` |
+
+### AC 2: UI is consistent and meets accessibility standards (WCAG 2.2 AA)
+
+| Criterion | Evidence |
+|---|---|
+| Single `UiErrorAlert` component used for all API/model errors | `app/components/UiErrorAlert.vue` — single canonical component wired in `app/app.vue` and `ModelsSelector.vue` |
+| `role="alert"` on all error surfaces | `tests/unit/ui-error-alert.test.ts` — "renders role alert with title, message, and details"; `tests/unit/models-selector/accessibility.test.ts` — "announces error state with role alert" |
+| Details collapsed by default; toggle uses `aria-expanded` | `tests/unit/ui-error-alert.test.ts` — "keeps details collapsed by default when details toggle is enabled", "shows and hides details deterministically when toggle is clicked"; `tests/e2e/app.spec.ts` — details toggle keyboard/expand flow |
+| Retry button keyboard operable with accessible label | `tests/unit/ui-error-alert.test.ts` — "renders retry as an accessible button"; `tests/e2e/models-selector.spec.ts` — "retry button is keyboard focusable" |
+| Color not the only error indicator | `tests/unit/app.a11y.test.ts` — axe scan of App initial view and ModelsSelector success state (no violations) |
+| No detected axe violations on home and error states | `tests/unit/app.a11y.test.ts` (2 tests); `tests/e2e/accessibility.spec.ts` (2 tests — home page and error UI) |
+| Label/select association (`for`/`id`, `aria-describedby`) | `tests/unit/models-selector/accessibility.test.ts` — "associates label with select using for/id", "shows help text with default model and links it via aria-describedby" |
+
+### AC 3: Tests cover all error scenarios and verify correct messaging and accessibility
+
+| Scope | Coverage |
+|---|---|
+| Error normalization logic | `tests/unit/error-normalization.test.ts` — 7 tests (all categories + sanitization + fallbacks) |
+| Error sanitization utility | `tests/unit/error-sanitization.test.ts` |
+| Logging (dev-only, no sensitive leak) | `tests/unit/error-logging.test.ts` — 2 tests (logs in dev, silent outside dev) |
+| UI states wired to normalized errors | `tests/unit/app.ui.test.ts` — "uses canonical network message", "uses API message and details", "uses canonical unknown message with details" |
+| Full server-route integration per category | `tests/integration/respond-route.test.ts` — 3 category paths; `tests/integration/models.test.ts` — model fetch failure |
+| E2E user-visible flows | `tests/e2e/app.spec.ts` — 7 scenarios; `tests/e2e/models-selector.spec.ts` — 4 scenarios; `tests/e2e/accessibility.spec.ts` — 2 scenarios |
 
 ## Delivery Sequence Recommendation
 1. Phase 1
