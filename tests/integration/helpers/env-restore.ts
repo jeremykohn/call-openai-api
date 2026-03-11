@@ -1,8 +1,11 @@
-type OpenAIEnvKey =
-  | "OPENAI_API_KEY"
-  | "OPENAI_BASE_URL"
-  | "OPENAI_ALLOWED_HOSTS"
-  | "OPENAI_ALLOW_INSECURE_HTTP";
+
+export const ENV_KEYS = [
+  "OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "OPENAI_ALLOWED_HOSTS",
+  "OPENAI_ALLOW_INSECURE_HTTP",
+] as const;
+type OpenAIEnvKey = typeof ENV_KEYS[number];
 
 /**
  * Captures the current values of the given OpenAI env keys so they can be

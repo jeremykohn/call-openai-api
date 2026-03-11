@@ -5,17 +5,12 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
 import type { ApiSuccessResponse } from "~~/types/chat";
-import { captureEnvVars } from "./helpers/env-restore";
+import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 
 // Must be captured before any process.env mutations below.
-const env = captureEnvVars([
-  "OPENAI_API_KEY",
-  "OPENAI_BASE_URL",
-  "OPENAI_ALLOWED_HOSTS",
-  "OPENAI_ALLOW_INSECURE_HTTP",
-]);
+const env = captureEnvVars([...ENV_KEYS]);
 
 process.env.OPENAI_API_KEY = "test-key";
 

@@ -3,17 +3,12 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { captureEnvVars } from "./helpers/env-restore";
+import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 
 // Must be captured before any process.env mutations below.
-const env = captureEnvVars([
-  "OPENAI_API_KEY",
-  "OPENAI_BASE_URL",
-  "OPENAI_ALLOWED_HOSTS",
-  "OPENAI_ALLOW_INSECURE_HTTP",
-]);
+const env = captureEnvVars([...ENV_KEYS]);
 
 let mockStatus = 200;
 let mockBody: unknown = {
