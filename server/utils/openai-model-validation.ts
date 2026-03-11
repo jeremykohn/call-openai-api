@@ -19,6 +19,9 @@ type ModelsCache = {
   timestamp: number;
 };
 
+// Single-entry cache: only one base URL is cached at a time. Switching
+// OPENAI_BASE_URL at runtime evicts the previous entry. Intentional for
+// single-config deployments.
 let modelsCache: ModelsCache | null = null;
 
 const buildCacheKey = (baseUrl: string): string => {

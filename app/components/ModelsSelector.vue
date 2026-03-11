@@ -47,7 +47,6 @@
       data-testid="models-select"
       :value="selectedModelId || ''"
       :disabled="status === 'error' || !hasModels"
-      :aria-busy="false"
       :aria-invalid="status === 'error' ? 'true' : 'false'"
       :aria-required="required"
       :aria-describedby="describedBy"
@@ -81,6 +80,14 @@
     >
       <p class="font-semibold">{{ error }}</p>
       <p v-if="errorDetails" class="mt-1 text-red-700">{{ errorDetails }}</p>
+      <button
+        type="button"
+        data-testid="retry-button"
+        class="mt-2 text-sm font-semibold underline hover:text-red-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+        @click="emit('retry')"
+      >
+        Try again
+      </button>
     </div>
   </div>
 </template>
@@ -124,32 +131,15 @@ const describedBy = computed(() => {
 const emit = defineEmits<{
   /** Update the v-model value with selected model ID */
   "update:selectedModelId": [modelId: string | null];
-  /** Emit when a model is selected with full model object */
-  "model-selected": [model: OpenAIModel];
+  /** Emitted when the user clicks the retry button after an error */
+  retry: [];
 }>();
 
 /**
- * Retrieves full model object from models list by ID.
- */
-const getModelById = (id: string): OpenAIModel | undefined => {
-  return props.models.find((m: OpenAIModel) => m.id === id);
-};
-
-/**
  * Handles select element change event.
- * Emits both update:selectedModelId and model-selected events.
  */
 const handleSelectChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
-  const modelId = target.value;
-
-  emit("update:selectedModelId", modelId || null);
-
-  if (modelId) {
-    const model = getModelById(modelId);
-    if (model) {
-      emit("model-selected", model);
-    }
-  }
+  emit("update:selectedModelId", target.value || null);
 };
 </script>
