@@ -57,4 +57,37 @@ describe("UiErrorAlert", () => {
     const retryButton = wrapper.get("[data-testid='retry-button']");
     expect(retryButton.text()).toBe("Try again");
   });
+
+  it("keeps details collapsed by default when details toggle is enabled", () => {
+    const wrapper = mount(UiErrorAlert, {
+      props: {
+        message: "Request to OpenAI failed.",
+        details: "status: 401",
+        enableDetailsToggle: true,
+      },
+    });
+
+    expect(wrapper.text()).toContain("Show details");
+    expect(wrapper.text()).not.toContain("status: 401");
+  });
+
+  it("shows and hides details deterministically when toggle is clicked", async () => {
+    const wrapper = mount(UiErrorAlert, {
+      props: {
+        message: "Request to OpenAI failed.",
+        details: "status: 401",
+        enableDetailsToggle: true,
+      },
+    });
+
+    const detailsToggle = wrapper.get("[data-testid='details-toggle']");
+
+    await detailsToggle.trigger("click");
+    expect(wrapper.text()).toContain("Hide details");
+    expect(wrapper.text()).toContain("status: 401");
+
+    await detailsToggle.trigger("click");
+    expect(wrapper.text()).toContain("Show details");
+    expect(wrapper.text()).not.toContain("status: 401");
+  });
 });

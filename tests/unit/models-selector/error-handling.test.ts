@@ -58,6 +58,27 @@ describe("ModelsSelector - Error Handling", () => {
     });
 
     const errorElement = wrapper.find("[role='alert']");
+    expect(errorElement.text()).toContain("Show details");
+    expect(errorElement.text()).not.toContain(errorDetails);
+  });
+
+  it("reveals error details after toggling details button", async () => {
+    const errorDetails = "Invalid API key provided";
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: [],
+        selectedModelId: null,
+        status: "error",
+        error: "API Error",
+        errorDetails,
+      },
+    });
+
+    await wrapper
+      .get("[data-testid='models-error-details-toggle']")
+      .trigger("click");
+
+    const errorElement = wrapper.find("[role='alert']");
     expect(errorElement.text()).toContain(errorDetails);
   });
 

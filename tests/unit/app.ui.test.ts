@@ -97,6 +97,9 @@ describe("App UI states", () => {
 
     expect(wrapper.text()).toContain("Something went wrong");
     expect(wrapper.text()).toContain("Oops");
+    expect(wrapper.text()).toContain("Show details");
+
+    await wrapper.get("[data-testid='response-error-details-toggle']").trigger("click");
     expect(wrapper.text()).toContain("Details here");
   });
 

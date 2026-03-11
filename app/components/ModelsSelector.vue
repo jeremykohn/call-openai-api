@@ -77,6 +77,8 @@
       container-id="models-select-error"
       :message="error"
       :details="errorDetails ?? undefined"
+      :enable-details-toggle="true"
+      details-toggle-test-id="models-error-details-toggle"
       :show-retry="true"
       retry-label="Try again"
       retry-button-test-id="retry-button"

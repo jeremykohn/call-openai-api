@@ -105,6 +105,8 @@
           title="Something went wrong"
           :message="state.error || UNKNOWN_ERROR_MESSAGE"
           :details="state.errorDetails ?? undefined"
+          :enable-details-toggle="true"
+          details-toggle-test-id="response-error-details-toggle"
           class="rounded-2xl bg-red-50/80 p-6 shadow-sm"
         />
       </section>
