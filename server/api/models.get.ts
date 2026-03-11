@@ -88,12 +88,14 @@ export default defineEventHandler(async (event: H3Event) => {
       } satisfies ModelsErrorResponse;
     }
 
-    const upstreamModels = (payload.data ?? []).map(({ id, created, owned_by }) => ({
-      id,
-      object: "model" as const,
-      created,
-      owned_by,
-    }));
+    const upstreamModels = (payload.data ?? []).map(
+      ({ id, created, owned_by }) => ({
+        id,
+        object: "model" as const,
+        created,
+        owned_by,
+      }),
+    );
     const models = filterResponsesApiSupportedModels(upstreamModels);
 
     cacheModelsForBaseUrl(baseUrl, models);
