@@ -1,6 +1,6 @@
 import { ref, readonly, type Ref } from "vue";
 import type { OpenAIModel } from "~~/types/models";
-import { getErrorMessage, getErrorDetails } from "~/utils/type-guards";
+import { normalizeUiError } from "~/utils/error-normalization";
 
 /**
  * State structure for models list management.
@@ -93,12 +93,9 @@ export const useModelsState = (): UseModelsStateReturn => {
       state.value.status = "error";
       state.value.data = null;
 
-      // Extract error message and details using type guards
-      state.value.error = getErrorMessage(
-        error,
-        "An error occurred while fetching models",
-      );
-      state.value.errorDetails = getErrorDetails(error) ?? null;
+      const normalizedError = normalizeUiError(error);
+      state.value.error = normalizedError.message;
+      state.value.errorDetails = normalizedError.details ?? null;
     }
   };
 

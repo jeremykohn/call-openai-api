@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useModelsState } from "~/composables/use-models-state";
+import { NETWORK_ERROR_MESSAGE } from "~/utils/error-normalization";
 import type { OpenAIModel } from "~~/types/models";
 
 // Mock the fetch function
@@ -64,9 +65,10 @@ describe("useModelsState", () => {
     expect(state.value.error).toBeNull();
   });
 
-  it("status transitions to error with message when API fails", async () => {
-    const errorMessage = "Failed to fetch models";
-    const mockFetch = vi.fn().mockRejectedValue(new Error(errorMessage));
+  it("status transitions to error with canonical message when network fails", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockRejectedValue(new Error("Failed to fetch models"));
     vi.stubGlobal("$fetch", mockFetch);
 
     const { state, fetchModels } = useModelsState();
@@ -74,7 +76,8 @@ describe("useModelsState", () => {
     await fetchModels();
 
     expect(state.value.status).toBe("error");
-    expect(state.value.error).toContain(errorMessage);
+    expect(state.value.error).toBe(NETWORK_ERROR_MESSAGE);
+    expect(state.value.errorDetails).toBeNull();
     expect(state.value.data).toBeNull();
   });
 

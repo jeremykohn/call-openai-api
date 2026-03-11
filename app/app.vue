@@ -142,11 +142,7 @@ import { useRequestState } from "./composables/use-request-state";
 import { useModelsState } from "./composables/use-models-state";
 import ModelsSelector from "./components/ModelsSelector.vue";
 import { validatePrompt } from "./utils/prompt-validation";
-import {
-  isNetworkFetchError,
-  getErrorMessage,
-  getErrorDetails,
-} from "./utils/type-guards";
+import { normalizeUiError } from "./utils/error-normalization";
 import type { ApiSuccessResponse } from "../types/chat";
 
 useAppHead();
@@ -190,14 +186,8 @@ const handleSubmit = async () => {
 
     succeed(response.response);
   } catch (error) {
-    const isNetworkError = isNetworkFetchError(error);
-    const message = isNetworkError
-      ? "Unable to reach the server. Please check your connection and try again."
-      : getErrorMessage(error, "Request failed.");
-
-    const details = isNetworkError ? undefined : getErrorDetails(error);
-
-    fail(message, details);
+    const normalizedError = normalizeUiError(error);
+    fail(normalizedError.message, normalizedError.details);
   }
 };
 </script>
