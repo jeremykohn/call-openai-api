@@ -3,8 +3,17 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { captureEnvVars } from "./helpers/env-restore";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
+
+// Must be captured before any process.env mutations below.
+const env = captureEnvVars([
+  "OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "OPENAI_ALLOWED_HOSTS",
+  "OPENAI_ALLOW_INSECURE_HTTP",
+]);
 
 let mockStatus = 200;
 let mockBody: unknown = {
@@ -17,6 +26,26 @@ let mockBody: unknown = {
       owned_by: "openai",
     },
   ],
+};
+let mockRawBody: string | null = null;
+let simulateModelsNetworkError = false;
+
+const resetMockServerState = (): void => {
+  mockStatus = 200;
+  mockBody = {
+    object: "list",
+    data: [
+      {
+        id: "gpt-test-1",
+        object: "model",
+        created: 1686935002,
+        owned_by: "openai",
+      },
+    ],
+  };
+  mockRawBody = null;
+  simulateModelsNetworkError = false;
+  lastRequest = {};
 };
 
 interface TestRequest {
@@ -38,9 +67,14 @@ const mockServer = createServer((request, response) => {
     return;
   }
 
+  if (simulateModelsNetworkError) {
+    response.destroy(new Error("Simulated upstream models connection reset"));
+    return;
+  }
+
   response.statusCode = mockStatus;
   response.setHeader("Content-Type", "application/json");
-  response.end(JSON.stringify(mockBody));
+  response.end(mockRawBody ?? JSON.stringify(mockBody));
 });
 
 const mockPort = await new Promise<number>((resolve) => {
@@ -58,23 +92,12 @@ process.env.OPENAI_ALLOW_INSECURE_HTTP = "true";
 await setup({ rootDir, dev: true });
 
 beforeEach(() => {
-  mockStatus = 200;
-  mockBody = {
-    object: "list",
-    data: [
-      {
-        id: "gpt-test-1",
-        object: "model",
-        created: 1686935002,
-        owned_by: "openai",
-      },
-    ],
-  };
-  lastRequest = {};
+  resetMockServerState();
 });
 
 afterAll(() => {
   mockServer.close();
+  env.restoreAll();
 });
 
 describe("GET /api/models", () => {
@@ -178,6 +201,53 @@ describe("GET /api/models", () => {
         "Error: Failed API call, could not get list of OpenAI models",
       );
       expect(fetchError.data?.details).toContain("Invalid API key");
+    }
+  });
+
+  it("returns stable error contract when upstream network request fails", async () => {
+    simulateModelsNetworkError = true;
+
+    try {
+      await $fetch("/api/models");
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string; details?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(500);
+      expect(fetchError.data?.message).toBe(
+        "Error: Failed API call, could not get list of OpenAI models",
+      );
+      expect(fetchError.data?.details).toBeTruthy();
+      expect(fetchError.data?.details).toMatch(
+        /fetch failed|connection reset|ECONNREFUSED|ECONNRESET/i,
+      );
+      expect(fetchError.data?.details).not.toContain("test-key");
+    }
+  });
+
+  it("returns stable error contract when upstream payload is malformed", async () => {
+    mockStatus = 500;
+    mockRawBody = "{ malformed json";
+
+    try {
+      await $fetch("/api/models");
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string; details?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(500);
+      expect(fetchError.data?.message).toBe(
+        "Error: Failed API call, could not get list of OpenAI models",
+      );
+      expect(fetchError.data?.details).toContain("status: 500");
     }
   });
 });

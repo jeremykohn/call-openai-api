@@ -5,13 +5,37 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
 import type { ApiSuccessResponse } from "~~/types/chat";
+import { captureEnvVars } from "./helpers/env-restore";
+
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
+
+// Must be captured before any process.env mutations below.
+const env = captureEnvVars([
+  "OPENAI_API_KEY",
+  "OPENAI_BASE_URL",
+  "OPENAI_ALLOWED_HOSTS",
+  "OPENAI_ALLOW_INSECURE_HTTP",
+]);
+
 process.env.OPENAI_API_KEY = "test-key";
 
 let mockStatus = 200;
 let mockBody: unknown = { output_text: "Hello from OpenAI" };
+let mockRawBody: string | null = null;
+let simulateResponsesNetworkError = false;
+let simulateResponsesBodyTruncation = false;
 let lastRequestBody: { model: string; input: string } | null = null;
 let modelsRequestCount = 0;
+
+const resetMockServerState = (): void => {
+  mockStatus = 200;
+  mockBody = { output_text: "Hello from OpenAI" };
+  mockRawBody = null;
+  simulateResponsesNetworkError = false;
+  simulateResponsesBodyTruncation = false;
+  lastRequestBody = null;
+  modelsRequestCount = 0;
+};
 
 const mockServer = createServer((request, response) => {
   // Collect request body
@@ -39,6 +63,19 @@ const mockServer = createServer((request, response) => {
     }
 
     if (request.url === "/responses") {
+      if (simulateResponsesNetworkError) {
+        response.destroy(new Error("Simulated upstream connection reset"));
+        return;
+      }
+
+      if (simulateResponsesBodyTruncation) {
+        // Send headers then destroy mid-body to trigger a body-read error
+        response.writeHead(200, { "Content-Type": "application/json" });
+        response.write("{");
+        response.destroy();
+        return;
+      }
+
       // Capture request body for assertions
       if (body) {
         try {
@@ -53,7 +90,7 @@ const mockServer = createServer((request, response) => {
 
       response.statusCode = mockStatus;
       response.setHeader("Content-Type", "application/json");
-      response.end(JSON.stringify(mockBody));
+      response.end(mockRawBody ?? JSON.stringify(mockBody));
       return;
     }
 
@@ -77,12 +114,12 @@ await setup({ rootDir, dev: true });
 
 afterAll(() => {
   mockServer.close();
+  env.restoreAll();
 });
 
 describe("POST /api/respond", () => {
   beforeEach(() => {
-    lastRequestBody = null;
-    modelsRequestCount = 0;
+    resetMockServerState();
   });
   it("returns 400 for invalid prompt", async () => {
     try {
@@ -212,5 +249,80 @@ describe("POST /api/respond", () => {
     });
 
     expect(modelsRequestCount).toBe(1);
+  });
+
+  it("returns stable error contract when upstream response body cannot be read", async () => {
+    simulateResponsesBodyTruncation = true;
+
+    try {
+      await $fetch("/api/respond", {
+        method: "POST",
+        body: { prompt: "Hello" },
+      });
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string; details?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(500);
+      expect(fetchError.data?.message).toBe("Request to OpenAI failed.");
+      expect(fetchError.data?.details).toBeTruthy();
+      expect(fetchError.data?.details).toMatch(
+        /fetch failed|terminated|socket hang up|aborted|connection closed|premature close|other side closed|ECONNRESET|UND_ERR_SOCKET/i,
+      );
+      expect(fetchError.data?.details).not.toContain("test-key");
+    }
+  });
+
+  it("returns stable error contract when upstream network request fails", async () => {
+    simulateResponsesNetworkError = true;
+
+    try {
+      await $fetch("/api/respond", {
+        method: "POST",
+        body: { prompt: "Hello" },
+      });
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string; details?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(500);
+      expect(fetchError.data?.message).toBe("Request to OpenAI failed.");
+      expect(fetchError.data?.details).toBeTruthy();
+      expect(fetchError.data?.details).toMatch(
+        /fetch failed|connection reset|ECONNREFUSED|ECONNRESET/i,
+      );
+      expect(fetchError.data?.details).not.toContain("test-key");
+    }
+  });
+
+  it("returns stable error contract when upstream error payload is malformed", async () => {
+    mockStatus = 500;
+    mockRawBody = "{ malformed json";
+
+    try {
+      await $fetch("/api/respond", {
+        method: "POST",
+        body: { prompt: "Hello" },
+      });
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string; details?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(500);
+      expect(fetchError.data?.message).toBe("Request to OpenAI failed.");
+      expect(fetchError.data?.details).toContain("status: 500");
+    }
   });
 });
