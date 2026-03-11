@@ -1,8 +1,11 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
+import {
+  NETWORK_ERROR_MESSAGE,
+  UNKNOWN_ERROR_MESSAGE,
+} from "../../app/utils/error-normalization";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
-
 const buildWrapper = async (state: {
   status: string;
   data: string | null;
@@ -123,6 +126,7 @@ describe("App submit payload with model selection", () => {
   const buildSubmitWrapper = async (
     mockFetch: ReturnType<typeof vi.fn>,
     requestStatus: "idle" | "loading" | "success" | "error" = "idle",
+    failMock: ReturnType<typeof vi.fn> = vi.fn(),
   ) => {
     vi.resetModules();
     vi.stubGlobal("$fetch", mockFetch);
@@ -137,7 +141,7 @@ describe("App submit payload with model selection", () => {
         }),
         start: vi.fn(),
         succeed: vi.fn(),
-        fail: vi.fn(),
+        fail: failMock,
         reset: vi.fn(),
       }),
     }));
@@ -163,6 +167,7 @@ describe("App submit payload with model selection", () => {
           error: null,
           errorDetails: null,
         }),
+        fetchModels: vi.fn(),
       }),
     }));
 
@@ -171,7 +176,7 @@ describe("App submit payload with model selection", () => {
     }));
 
     const { default: App } = await import("../../app/app.vue");
-    return mount(App);
+    return { wrapper: mount(App), failMock };
   };
 
   it("includes selected model in request when model is selected", async () => {
@@ -179,7 +184,7 @@ describe("App submit payload with model selection", () => {
       response: "Test response",
       model: "gpt-4",
     });
-    const wrapper = await buildSubmitWrapper(mockFetch);
+    const { wrapper } = await buildSubmitWrapper(mockFetch);
 
     await wrapper.get("#prompt-input").setValue("Hello");
     await wrapper.get("[data-testid='models-select']").setValue("gpt-4");
@@ -203,7 +208,7 @@ describe("App submit payload with model selection", () => {
       response: "Test response",
       model: DEFAULT_MODEL, // Server will use default
     });
-    const wrapper = await buildSubmitWrapper(mockFetch);
+    const { wrapper } = await buildSubmitWrapper(mockFetch);
 
     await wrapper.get("#prompt-input").setValue("Hello");
     await wrapper.get("form").trigger("submit");
@@ -222,11 +227,55 @@ describe("App submit payload with model selection", () => {
 
   it("does not submit while request is already loading", async () => {
     const mockFetch = vi.fn();
-    const wrapper = await buildSubmitWrapper(mockFetch, "loading");
+    const { wrapper } = await buildSubmitWrapper(mockFetch, "loading");
 
     await wrapper.get("#prompt-input").setValue("Hello");
     await wrapper.get("form").trigger("submit");
 
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("uses canonical network message when submit fails with network error", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    const failMock = vi.fn();
+    const { wrapper } = await buildSubmitWrapper(mockFetch, "idle", failMock);
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("form").trigger("submit");
+
+    expect(failMock).toHaveBeenCalledWith(NETWORK_ERROR_MESSAGE, undefined);
+  });
+
+  it("uses API message and details when submit fails with API error", async () => {
+    const mockFetch = vi.fn().mockRejectedValue({
+      data: {
+        message: "Invalid API key. Please check your key and try again.",
+        details: "status: 401",
+      },
+    });
+    const failMock = vi.fn();
+    const { wrapper } = await buildSubmitWrapper(mockFetch, "idle", failMock);
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("form").trigger("submit");
+
+    expect(failMock).toHaveBeenCalledWith(
+      "Invalid API key. Please check your key and try again.",
+      "status: 401",
+    );
+  });
+
+  it("uses canonical unknown message with details when submit fails unexpectedly", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("unexpected runtime issue"));
+    const failMock = vi.fn();
+    const { wrapper } = await buildSubmitWrapper(mockFetch, "idle", failMock);
+
+    await wrapper.get("#prompt-input").setValue("Hello");
+    await wrapper.get("form").trigger("submit");
+
+    expect(failMock).toHaveBeenCalledWith(
+      UNKNOWN_ERROR_MESSAGE,
+      "unexpected runtime issue",
+    );
   });
 });
