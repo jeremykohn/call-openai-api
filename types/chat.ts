@@ -1,5 +1,6 @@
 export type PromptRequest = {
   prompt: string;
+  model?: string;
 };
 
 export type PromptValidationResult =
@@ -14,6 +15,7 @@ export type PromptValidationResult =
 
 export type ApiSuccessResponse = {
   response: string;
+  model: string;
 };
 
 export type ApiErrorResponse = {

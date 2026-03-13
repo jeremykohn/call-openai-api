@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { useRequestState } from "../../app/composables/use-request-state";
+import { useRequestState } from "~/composables/use-request-state";
 
 describe("useRequestState", () => {
   it("transitions from idle to loading to success", () => {

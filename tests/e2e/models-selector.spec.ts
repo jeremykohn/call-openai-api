@@ -1,0 +1,114 @@
+import { expect, test } from "@playwright/test";
+
+const mockModels = [
+  { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+  { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
+];
+
+test("loads models and allows selection", async ({ page }) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModels }),
+    });
+  });
+
+  await page.goto("/");
+
+  const select = page.getByRole("combobox", { name: "Model" });
+  await expect(select).toBeVisible();
+
+  await select.selectOption("gpt-4");
+  await expect(select).toHaveValue("gpt-4");
+});
+
+test("shows a loading indicator while models are fetching", async ({
+  page,
+}) => {
+  let releaseResponse: (() => void) | undefined;
+  const responseGate = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+
+  await page.route("**/api/models", async (route) => {
+    await responseGate;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModels }),
+    });
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForRequest("**/api/models");
+
+  const loadingIndicator = page.getByTestId("loading-indicator");
+  await expect(loadingIndicator).toBeVisible();
+
+  releaseResponse?.();
+
+  const select = page.getByRole("combobox", { name: "Model" });
+  await expect(select).toBeVisible();
+});
+
+test("shows an error message when models API fails", async ({ page }) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Failed to load models.",
+        details: "Server unavailable",
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  const alert = page.getByRole("alert");
+  const detailsToggle = page.getByTestId("models-error-details-toggle");
+  const retryButton = page.getByTestId("retry-button");
+  const select = page.getByRole("combobox", { name: "Model" });
+
+  await expect(alert).toContainText("Failed to load models.");
+  await expect(alert).not.toContainText("Server unavailable");
+  await expect(detailsToggle).toHaveText("Show details");
+  await expect(detailsToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(retryButton).toBeVisible();
+  await expect(select).toBeDisabled();
+  await expect(select).toHaveAttribute(
+    "aria-describedby",
+    /models-select-error/,
+  );
+
+  await detailsToggle.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(detailsToggle).toHaveText("Hide details");
+  await expect(detailsToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(alert).toContainText("Server unavailable");
+
+  await retryButton.focus();
+  await expect(retryButton).toBeFocused();
+});
+
+test("disables selector and shows empty-state text when no models", async ({
+  page,
+}) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: [] }),
+    });
+  });
+
+  await page.goto("/");
+
+  const select = page.getByRole("combobox", { name: "Model" });
+  await expect(select).toBeDisabled();
+
+  const firstOption = select.locator("option").first();
+  await expect(firstOption).toHaveText("No models available");
+});

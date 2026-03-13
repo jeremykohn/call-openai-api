@@ -1,18 +1,23 @@
 import { ref } from "vue";
-import type { RequestState } from "../../types/chat";
+import type { RequestState } from "~~/types/chat";
 
 const createInitialState = (): RequestState => ({
   status: "idle",
   data: null,
   error: null,
-  errorDetails: null
+  errorDetails: null,
 });
 
 export const useRequestState = () => {
   const state = ref<RequestState>(createInitialState());
 
   const start = () => {
-    state.value = { status: "loading", data: null, error: null, errorDetails: null };
+    state.value = {
+      status: "loading",
+      data: null,
+      error: null,
+      errorDetails: null,
+    };
   };
 
   const succeed = (data: string) => {
@@ -20,7 +25,12 @@ export const useRequestState = () => {
   };
 
   const fail = (error: string, details?: string) => {
-    state.value = { status: "error", data: null, error, errorDetails: details ?? null };
+    state.value = {
+      status: "error",
+      data: null,
+      error,
+      errorDetails: details ?? null,
+    };
   };
 
   const reset = () => {
@@ -32,6 +42,6 @@ export const useRequestState = () => {
     start,
     succeed,
     fail,
-    reset
+    reset,
   };
 };
