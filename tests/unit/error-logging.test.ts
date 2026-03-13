@@ -1,7 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  logNormalizedUiError,
-} from "../../app/utils/error-logging";
+import { logNormalizedUiError } from "../../app/utils/error-logging";
 import type { NormalizedUiError } from "../../app/utils/error-normalization";
 
 describe("logNormalizedUiError", () => {

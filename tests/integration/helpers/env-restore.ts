@@ -1,18 +1,19 @@
-
 export const ENV_KEYS = [
   "OPENAI_API_KEY",
   "OPENAI_BASE_URL",
   "OPENAI_ALLOWED_HOSTS",
   "OPENAI_ALLOW_INSECURE_HTTP",
 ] as const;
-type OpenAIEnvKey = typeof ENV_KEYS[number];
+type OpenAIEnvKey = (typeof ENV_KEYS)[number];
 
 /**
  * Captures the current values of the given OpenAI env keys so they can be
  * restored after a test suite mutates them. Returns an object with a
  * `restoreAll` method to reset all captured values at once.
  */
-export function captureEnvVars(keys: OpenAIEnvKey[]): { restoreAll: () => void } {
+export function captureEnvVars(keys: OpenAIEnvKey[]): {
+  restoreAll: () => void;
+} {
   const originals = new Map<OpenAIEnvKey, string | undefined>();
   for (const key of keys) {
     originals.set(key, process.env[key]);
