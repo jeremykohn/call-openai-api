@@ -1,16 +1,20 @@
 # Implementation Plan with Tasks: Improve Model Filtering via Responses Capability Discovery
 
 ## Source Inputs
+
 - Prompt file: `.github/prompts/prompt-to-create-implementation-with-tasks-to-improve-model-filtering.md`
 - Follow-up requirement: design a practical capability-discovery strategy using OpenAI API data + verification probes
 - Implementation style: Test-Driven Development (TDD) with explicit red-green-refactor loops
 - Test scope required: unit, integration, and end-to-end tests
 
 ## Problem Statement
+
 The current model filter relies on static heuristics that are not strict enough. Unsupported models (for example, embeddings and image-generation families) can still appear in the dropdown and then fail at submit time with `invalid_request_error` / `model_not_found` for the Responses API.
 
 ## Target Outcome
+
 The dropdown should only show models that are verified as Responses-compatible. Compatibility should be determined by a server-owned capability pipeline:
+
 1. Discover candidates from `GET /v1/models`
 2. Verify candidates using a minimal `POST /v1/responses` probe
 3. Cache capability results with TTL
@@ -19,6 +23,7 @@ The dropdown should only show models that are verified as Responses-compatible. 
 6. Re-validate selected model at submit time
 
 ## Implementation Principles
+
 - Keep the server as source of truth for model compatibility.
 - Prefer deterministic behavior over runtime uncertainty.
 - Separate discovery, verification, caching, and UI mapping concerns.
@@ -27,6 +32,7 @@ The dropdown should only show models that are verified as Responses-compatible. 
 - Each phase must ship with tests first (red), then implementation (green), then cleanup (refactor).
 
 ## Resolved Design Decisions
+
 - **Cache storage:** Capability state is persisted in **server memory**.
 - **Cache TTL:** Fixed at **24 hours**; not environment-configurable.
 - **Manual override config:** Allow/deny lists are loaded from `server/config/allowed-models-overrides.json` with schema `{ "allowed_models": string[], "disallowed_models": string[] }`.
@@ -43,14 +49,17 @@ The dropdown should only show models that are verified as Responses-compatible. 
 ## Phase 1 — Define Capability Contract and Data Model
 
 ### Approach
+
 Start by defining a clear domain contract for capability status so all later layers (models API, submit validation, UI) consume the same semantics. This avoids ad hoc booleans and makes cache, overrides, and probe outcomes consistent.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add unit tests for capability states and merge precedence (probe vs override vs unknown).
 - **Green:** Implement minimal capability types/helpers to satisfy tests.
 - **Refactor:** Simplify naming and remove ambiguous status flags.
 
 ### Tasks
+
 1. Define capability statuses (`supported`, `unsupported`, `unknown`) and required metadata (`checkedAt`, `source`, optional `errorCode`).
 2. Define fixed TTL constant of **24 hours**; document that this is not configurable.
 3. Define precedence rules: manual overrides > fresh probe result > stale cached result > `unknown` fallback.
@@ -67,14 +76,17 @@ Start by defining a clear domain contract for capability status so all later lay
 ## Phase 2 — Implement Discovery + Probe Verification Pipeline
 
 ### Approach
+
 Build the capability discovery engine on the server: fetch model candidates from OpenAI, probe candidates with lightweight Responses calls, classify results, and persist in cache. Keep this pipeline independent of route rendering so it can be tested in isolation.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add unit and integration tests that simulate list/probe outcomes and expected classification.
 - **Green:** Implement the minimal discovery + probe + classifier flow.
 - **Refactor:** Extract transport adapters and reduce duplicated classification branches.
 
 ### Tasks
+
 1. Add unit tests for candidate discovery parsing from `GET /v1/models` payloads.
 2. Add unit tests for probe classification rules (`2xx` => `supported`, known `400` incompatibility error => `unsupported`, timeout or transient failure => `unknown`).
 3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and `max_output_tokens: 16`.
@@ -89,14 +101,17 @@ Build the capability discovery engine on the server: fetch model candidates from
 ## Phase 3 — Add Cache + Override Layer and Expose Filtered `/api/models`
 
 ### Approach
+
 Integrate capability results with cache and overrides so `/api/models` can return a deterministic, filtered list without probing on every request. This phase converts the pipeline into production behavior and protects performance.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add integration tests that fail if unsupported/stale/unknown models leak into API output.
 - **Green:** Implement cache reads/writes, TTL handling, and override application in route flow.
 - **Refactor:** Clarify route variables (`upstream`, `capabilityMap`, `supportedModels`), isolate async background-refresh logic, and remove duplicate filters.
 
 ### Tasks
+
 1. Add integration test: `/api/models` returns `supported` models and `unknown` models (with a caveat flag); excludes `unsupported` models.
 2. Add integration test: known unsupported examples (`text-embedding-ada-002`, `gpt-image-1.5`, `dall-e-3`) are excluded from the response.
 3. Add integration test: `unknown` models appear in the response with a caveat field (e.g., `"capabilityUnverified": true`) and are not silently dropped.
@@ -115,14 +130,17 @@ Integrate capability results with cache and overrides so `/api/models` can retur
 ## Phase 4 — Submit-Time Validation and Safe Fallback
 
 ### Approach
+
 Even with filtered dropdown options, stale client state or direct request tampering can still submit unsupported models. Add submit-path validation to ensure the server never forwards incompatible models to `POST /v1/responses`.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add unit and integration tests for unsupported/stale submitted model IDs.
 - **Green:** Implement deterministic submit validation and fallback behavior.
 - **Refactor:** Centralize model-compatibility checks used by both list and submit paths.
 
 ### Tasks
+
 1. Add unit tests for submit validation when selected model is `supported` (request proceeds normally).
 2. Add unit tests for submit validation when selected model is `unsupported` (server returns a user-facing error; does not fall back to default model silently).
 3. Add unit tests for submit validation when selected model is `unknown` (treat as unsupported; return user-facing error).
@@ -137,14 +155,17 @@ Even with filtered dropdown options, stale client state or direct request tamper
 ## Phase 5 — End-to-End UX Validation and Regression Safety
 
 ### Approach
+
 Validate complete browser flows with deterministic mocks to prove users only see supported models and no longer hit the prior model-not-supported error from normal dropdown usage.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add failing E2E scenarios for mixed model lists and unsupported selections.
 - **Green:** Implement any remaining wiring/state fixes so all scenarios pass.
 - **Refactor:** Stabilize selectors/mocks/waits to prevent flaky regressions.
 
 ### Tasks
+
 1. Add E2E scenario: mixed upstream model list appears in UI as supported-only dropdown options.
 2. Add E2E assertion: unsupported examples from bug report are absent from dropdown options.
 3. Add E2E assertion: `unknown` models display the caveat text in `ModelsSelector.vue`.
@@ -158,14 +179,17 @@ Validate complete browser flows with deterministic mocks to prove users only see
 ## Phase 6 — Observability, Documentation, and Release Readiness
 
 ### Approach
+
 Finalize maintainability and operational confidence: document how capability discovery works, how to update overrides, and what test evidence proves correctness.
 
 ### Red-Green-Refactor Loop
+
 - **Red:** Add missing regression tests uncovered during observability/docs cleanup.
 - **Green:** Complete docs/logging/telemetry additions while preserving behavior.
 - **Refactor:** Simplify names and remove dead branches introduced during migration.
 
 ### Tasks
+
 1. Add `info`-level structured logging for: model discovery start/complete, probe classification result per model, cache hit/miss per model, and override application.
 2. Add stdout/stderr metric output for: total models discovered, total probed, counts per capability status, and cache hit rate.
 3. Ensure no secrets or API keys appear in any log or metric output.
@@ -178,18 +202,21 @@ Finalize maintainability and operational confidence: document how capability dis
 ---
 
 ## Test Matrix (Planned)
+
 - **Unit tests:** capability contract, precedence, TTL behavior, probe classification, submit validation.
 - **Integration tests:** discovery/probe pipeline, cache + overrides, `/api/models` filtering, submit-path guardrails.
 - **E2E tests:** supported-only dropdown rendering and regression prevention for unsupported-model submit failures.
 - **Accessibility tests:** ensure model selector behavior remains keyboard/screen-reader compatible after filtering changes.
 
 ## Acceptance Criteria Mapping
+
 1. **Unsupported models are not shown in dropdown:** validated by Phase 3 integration tests + Phase 5 E2E visibility assertions.
 2. **Supported models continue to work end-to-end:** validated by Phase 2 probe classification + Phase 5 submit-success scenarios.
 3. **Server never blindly forwards unsupported models from stale/tampered input:** validated by Phase 4 integration tests.
 4. **Filtering remains maintainable and operationally observable:** validated by Phase 1 contract tests + Phase 6 docs/telemetry checks.
 
 ## Delivery Sequence Recommendation
+
 1. Phase 1
 2. Phase 2
 3. Phase 3
