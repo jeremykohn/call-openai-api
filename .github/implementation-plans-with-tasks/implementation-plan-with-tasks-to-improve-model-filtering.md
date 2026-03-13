@@ -27,14 +27,14 @@ The dropdown should only show models that are verified as Responses-compatible. 
 - Each phase must ship with tests first (red), then implementation (green), then cleanup (refactor).
 
 ## Resolved Design Decisions
-- **Cache storage:** Capability state is persisted in the **browser's `localStorage`**.
+- **Cache storage:** Capability state is persisted in **server memory**.
 - **Cache TTL:** Fixed at **24 hours**; not environment-configurable.
-- **Manual override config:** Allow/deny lists are loaded from a **server-side config file**.
-- **Probe payload:** Hardcoded minimum-length input string and the minimum allowable value for `max_output_tokens`.
+- **Manual override config:** Allow/deny lists are loaded from `server/config/allowed-models-overrides.json` with schema `{ "allowed_models": string[], "disallowed_models": string[] }`.
+- **Probe payload:** Hardcoded minimum-length input string and `max_output_tokens: 1`.
 - **Probe concurrency:** Unbounded (all candidates probed in parallel).
 - **Probe timeout:** 5 seconds per probe call; exceeded probes are classified as `unknown`.
 - **Stale cache behavior:** Route returns stale data immediately, then triggers an async background refresh (stale-while-revalidate).
-- **`unknown` capability in dropdown:** Included with a visible caveat (e.g., "Availability unverified").
+- **`unknown` capability in dropdown:** Included with `capabilityUnverified: true`, and the caveat is shown in `ModelsSelector.vue` text.
 - **Unsupported model submitted:** Server returns a user-facing error; does not silently fall back to default model.
 - **Logging level:** All discovery/probe/cache events logged at `info`; metrics written to stdout/stderr.
 
@@ -56,10 +56,11 @@ Start by defining a clear domain contract for capability status so all later lay
 3. Define precedence rules: manual overrides > fresh probe result > stale cached result > `unknown` fallback.
 4. Add unit tests for capability status transitions and precedence logic.
 5. Add unit tests for TTL expiration: a record is `fresh` when `checkedAt` is within 24 hours; `stale` otherwise.
-6. Add unit tests for deterministic handling of missing model IDs and malformed `localStorage` records.
-7. Implement capability contract utilities, including `localStorage` read/write helpers, to make tests pass.
-8. Implement config-file loader for manual allow/deny lists; add unit tests for parsing valid and malformed configs.
-9. Refactor utility names/types so they describe domain intent (capability/verification), not transport details.
+6. Add unit tests for deterministic handling of missing model IDs and malformed in-memory cache records.
+7. Add unit tests for parsing valid and malformed config files shaped as `{ "allowed_models": string[], "disallowed_models": string[] }`.
+8. Implement capability contract utilities, including server-memory cache read/write helpers, to make tests pass.
+9. Implement config-file loader for `server/config/allowed-models-overrides.json`.
+10. Refactor utility names/types so they describe domain intent (capability/verification), not transport details.
 
 ---
 
@@ -76,7 +77,7 @@ Build the capability discovery engine on the server: fetch model candidates from
 ### Tasks
 1. Add unit tests for candidate discovery parsing from `GET /v1/models` payloads.
 2. Add unit tests for probe classification rules (`2xx` => `supported`, known `400` incompatibility error => `unsupported`, timeout or transient failure => `unknown`).
-3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and the minimum allowable `max_output_tokens` value.
+3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and `max_output_tokens: 1`.
 4. Add unit tests asserting that probe calls exceeding **5 seconds** are classified as `unknown` (not `supported` or `unsupported`).
 5. Add integration test with mixed probe outcomes across model IDs and verify resulting capability map.
 6. Add integration test for rate-limit or transient OpenAI failures to ensure graceful `unknown` classification without hard crashes.
@@ -103,10 +104,11 @@ Integrate capability results with cache and overrides so `/api/models` can retur
 5. Add integration test: fresh cache (within 24 hours) is reused without re-probing and no background refresh is triggered.
 6. Add integration test: manual deny override excludes a model even if probe says `supported`.
 7. Add integration test: manual allow override includes a model when policy permits explicit exceptions.
-8. Implement `localStorage`-backed cache store/retrieval with 24-hour TTL checks and async background-refresh trigger on stale read.
-9. Implement override merge logic using the config-file loader from Phase 1.
-10. Update `GET /api/models` flow to consume capability pipeline and emit existing client schema, including caveat field for `unknown` models.
-11. Refactor route code to keep discovery/verification concerns outside response mapping.
+8. Implement server-memory cache store/retrieval with 24-hour TTL checks and async background-refresh trigger on stale read.
+9. Implement override merge logic using `server/config/allowed-models-overrides.json`.
+10. Update `GET /api/models` flow to consume capability pipeline and emit existing client schema, including `capabilityUnverified: true` for `unknown` models.
+11. Update `ModelsSelector.vue` to show visible caveat text for models marked with `capabilityUnverified: true`.
+12. Refactor route code to keep discovery/verification concerns outside response mapping.
 
 ---
 
@@ -145,10 +147,11 @@ Validate complete browser flows with deterministic mocks to prove users only see
 ### Tasks
 1. Add E2E scenario: mixed upstream model list appears in UI as supported-only dropdown options.
 2. Add E2E assertion: unsupported examples from bug report are absent from dropdown options.
-3. Add E2E scenario: supported model remains selectable and successful on submit.
-4. Add E2E scenario: no explicit selection still uses default-model behavior.
-5. Add E2E regression scenario: normal dropdown flow does not produce prior Responses-incompatible model error.
-6. Stabilize route mocks and timing controls for repeatable CI behavior.
+3. Add E2E assertion: `unknown` models display the caveat text in `ModelsSelector.vue`.
+4. Add E2E scenario: supported model remains selectable and successful on submit.
+5. Add E2E scenario: no explicit selection still uses default-model behavior.
+6. Add E2E regression scenario: normal dropdown flow does not produce prior Responses-incompatible model error.
+7. Stabilize route mocks and timing controls for repeatable CI behavior.
 
 ---
 
@@ -167,7 +170,7 @@ Finalize maintainability and operational confidence: document how capability dis
 2. Add stdout/stderr metric output for: total models discovered, total probed, counts per capability status, and cache hit rate.
 3. Ensure no secrets or API keys appear in any log or metric output.
 4. Add unit tests for any new logging/metric helper formatting if introduced.
-5. Update docs to describe discovery/probe/cache/override model-filtering behavior, fixed 24-hour TTL, unbounded concurrency, 5-second probe timeout, and override config file format.
+5. Update docs to describe discovery/probe/cache/override model-filtering behavior, fixed 24-hour TTL, unbounded concurrency, 5-second probe timeout, override config file path/schema, and `unknown` caveat text behavior in `ModelsSelector.vue`.
 6. Add maintainer guidance for updating override lists and interpreting probe errors.
 7. Run full matrix: unit, integration, E2E, and accessibility checks.
 8. Prepare final acceptance mapping from user bug reports to concrete passing tests.
