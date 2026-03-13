@@ -30,7 +30,7 @@ The dropdown should only show models that are verified as Responses-compatible. 
 - **Cache storage:** Capability state is persisted in **server memory**.
 - **Cache TTL:** Fixed at **24 hours**; not environment-configurable.
 - **Manual override config:** Allow/deny lists are loaded from `server/config/allowed-models-overrides.json` with schema `{ "allowed_models": string[], "disallowed_models": string[] }`.
-- **Probe payload:** Hardcoded minimum-length input string and `max_output_tokens: 1`.
+- **Probe payload:** Hardcoded minimum-length input string and `max_output_tokens: 16`.
 - **Probe concurrency:** Unbounded (all candidates probed in parallel).
 - **Probe timeout:** 5 seconds per probe call; exceeded probes are classified as `unknown`.
 - **Stale cache behavior:** Route returns stale data immediately, then triggers an async background refresh (stale-while-revalidate).
@@ -77,7 +77,7 @@ Build the capability discovery engine on the server: fetch model candidates from
 ### Tasks
 1. Add unit tests for candidate discovery parsing from `GET /v1/models` payloads.
 2. Add unit tests for probe classification rules (`2xx` => `supported`, known `400` incompatibility error => `unsupported`, timeout or transient failure => `unknown`).
-3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and `max_output_tokens: 1`.
+3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and `max_output_tokens: 16`.
 4. Add unit tests asserting that probe calls exceeding **5 seconds** are classified as `unknown` (not `supported` or `unsupported`).
 5. Add integration test with mixed probe outcomes across model IDs and verify resulting capability map.
 6. Add integration test for rate-limit or transient OpenAI failures to ensure graceful `unknown` classification without hard crashes.
