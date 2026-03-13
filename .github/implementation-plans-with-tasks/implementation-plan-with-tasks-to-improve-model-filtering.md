@@ -32,7 +32,7 @@ The dropdown should only show models that are verified as Responses-compatible. 
 - **Manual override config:** Allow/deny lists are loaded from `server/config/allowed-models-overrides.json` with schema `{ "allowed_models": string[], "disallowed_models": string[] }`.
 - **Probe payload:** Hardcoded minimum-length input string and `max_output_tokens: 16`.
 - **Probe concurrency:** Unbounded (all candidates probed in parallel).
-- **Probe timeout:** 5 seconds per probe call; exceeded probes are classified as `unknown`.
+- **Probe timeout:** 2 seconds per probe call; exceeded probes are classified as `unknown`.
 - **Stale cache behavior:** Route returns stale data immediately, then triggers an async background refresh (stale-while-revalidate).
 - **`unknown` capability in dropdown:** Included with `capabilityUnverified: true`, and the caveat is shown in `ModelsSelector.vue` text.
 - **Unsupported model submitted:** Server returns a user-facing error; does not silently fall back to default model.
@@ -78,10 +78,10 @@ Build the capability discovery engine on the server: fetch model candidates from
 1. Add unit tests for candidate discovery parsing from `GET /v1/models` payloads.
 2. Add unit tests for probe classification rules (`2xx` => `supported`, known `400` incompatibility error => `unsupported`, timeout or transient failure => `unknown`).
 3. Add unit tests asserting that the probe request uses a hardcoded minimum-length input string and `max_output_tokens: 16`.
-4. Add unit tests asserting that probe calls exceeding **5 seconds** are classified as `unknown` (not `supported` or `unsupported`).
+4. Add unit tests asserting that probe calls exceeding **2 seconds** are classified as `unknown` (not `supported` or `unsupported`).
 5. Add integration test with mixed probe outcomes across model IDs and verify resulting capability map.
 6. Add integration test for rate-limit or transient OpenAI failures to ensure graceful `unknown` classification without hard crashes.
-7. Implement discovery + probe orchestration: all candidates probed in parallel (unbounded concurrency), each with a **5-second** timeout.
+7. Implement discovery + probe orchestration: all candidates probed in parallel (unbounded concurrency), each with a **2-second** timeout.
 8. Refactor classifier/probe adapters into focused helpers for easier mocking.
 
 ---
@@ -170,7 +170,7 @@ Finalize maintainability and operational confidence: document how capability dis
 2. Add stdout/stderr metric output for: total models discovered, total probed, counts per capability status, and cache hit rate.
 3. Ensure no secrets or API keys appear in any log or metric output.
 4. Add unit tests for any new logging/metric helper formatting if introduced.
-5. Update docs to describe discovery/probe/cache/override model-filtering behavior, fixed 24-hour TTL, unbounded concurrency, 5-second probe timeout, override config file path/schema, and `unknown` caveat text behavior in `ModelsSelector.vue`.
+5. Update docs to describe discovery/probe/cache/override model-filtering behavior, fixed 24-hour TTL, unbounded concurrency, 2-second probe timeout, override config file path/schema, and `unknown` caveat text behavior in `ModelsSelector.vue`.
 6. Add maintainer guidance for updating override lists and interpreting probe errors.
 7. Run full matrix: unit, integration, E2E, and accessibility checks.
 8. Prepare final acceptance mapping from user bug reports to concrete passing tests.
