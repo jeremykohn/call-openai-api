@@ -99,7 +99,9 @@ describe("App UI states", () => {
     expect(wrapper.text()).toContain("Oops");
     expect(wrapper.text()).toContain("Show details");
 
-    await wrapper.get("[data-testid='response-error-details-toggle']").trigger("click");
+    await wrapper
+      .get("[data-testid='response-error-details-toggle']")
+      .trigger("click");
     expect(wrapper.text()).toContain("Details here");
   });
 
@@ -239,7 +241,9 @@ describe("App submit payload with model selection", () => {
   });
 
   it("uses canonical network message when submit fails with network error", async () => {
-    const mockFetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+    const mockFetch = vi
+      .fn()
+      .mockRejectedValue(new TypeError("Failed to fetch"));
     const failMock = vi.fn();
     const { wrapper } = await buildSubmitWrapper(mockFetch, "idle", failMock);
 
@@ -269,7 +273,9 @@ describe("App submit payload with model selection", () => {
   });
 
   it("uses canonical unknown message with details when submit fails unexpectedly", async () => {
-    const mockFetch = vi.fn().mockRejectedValue(new Error("unexpected runtime issue"));
+    const mockFetch = vi
+      .fn()
+      .mockRejectedValue(new Error("unexpected runtime issue"));
     const failMock = vi.fn();
     const { wrapper } = await buildSubmitWrapper(mockFetch, "idle", failMock);
 

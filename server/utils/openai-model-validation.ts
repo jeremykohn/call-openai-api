@@ -2,6 +2,7 @@ import type { OpenAIModel } from "~~/types/models";
 import { DEFAULT_MODEL } from "~~/shared/constants/models";
 import { HTTP_STATUS } from "../constants/http-status";
 import { buildOpenAIUrl } from "./openai-security";
+import { isResponsesApiSupportedModel } from "./openai-model-support";
 
 const MODELS_PATH = "models";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -65,7 +66,9 @@ const fetchAvailableModels = async (
     }
 
     const payload = (await response.json()) as { data?: OpenAIModel[] };
-    const models = (payload.data ?? []).map((model) => model.id);
+    const models = (payload.data ?? [])
+      .filter((model) => isResponsesApiSupportedModel(model.id))
+      .map((model) => model.id);
 
     modelsCache = {
       cacheKey: buildCacheKey(baseUrl),

@@ -60,7 +60,13 @@ const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       ok: true,
       status: 200,
       jsonPayload: {
-        data: [{ id: "gpt-4" }, { id: "gpt-3.5-turbo" }, { id: DEFAULT_MODEL }],
+        data: [
+          { id: "gpt-4" },
+          { id: "gpt-3.5-turbo" },
+          { id: DEFAULT_MODEL },
+          { id: "whisper-1" },
+          { id: "tts-1" },
+        ],
       },
     });
   }
@@ -219,5 +225,22 @@ describe("Server: Model Validation Logic", () => {
       message: "OPENAI_ALLOWED_HOSTS contains invalid host entries",
     });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects Responses-API-unsupported models (e.g. whisper, tts) even if they exist in OpenAI models list", async () => {
+    for (const unsupportedModel of ["whisper-1", "tts-1"]) {
+      clearModelsCache();
+      requestBody = { prompt: "Hello", model: unsupportedModel };
+
+      const result = await handler({} as never);
+
+      expect(responseStatus).toBe(400);
+      expect(result).toEqual({ message: "Model is not valid" });
+
+      const responsesCall = fetchMock.mock.calls.find(([url]) =>
+        String(url).endsWith("/responses"),
+      );
+      expect(responsesCall).toBeUndefined();
+    }
   });
 });
