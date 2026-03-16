@@ -7,6 +7,24 @@ Notes:
 - Prompts are limited to 4000 characters.
 - The model dropdown only shows models compatible with the OpenAI Responses API (for example, transcription-only models are filtered out).
 
+## Model compatibility filtering
+
+- The server discovers candidate models from OpenAI's models API and verifies Responses API compatibility using lightweight probe requests.
+- Probe requests use a fixed minimal payload (`input: "a"`, `max_output_tokens: 16`) with a 2-second timeout.
+- Compatibility results are cached in server memory for 24 hours.
+- Stale cache entries are returned immediately and refreshed asynchronously in the background.
+- Manual overrides are read from `server/config/allowed-models-overrides.json` with this schema:
+
+```json
+{
+  "allowed_models": [],
+  "disallowed_models": []
+}
+```
+
+- Models with unknown capability are returned with `capabilityUnverified: true` and shown in the selector with an "Availability unverified" caveat.
+- Submitting an unverified-capability model returns a user-facing validation error.
+
 ## Error handling behavior
 
 The app normalizes request failures into consistent UI-facing categories:

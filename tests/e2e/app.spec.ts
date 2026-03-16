@@ -12,6 +12,16 @@ const mockModels = [
   { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
 ];
 
+const mockModelsWithUnknown = [
+  { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+  {
+    id: "gpt-image-1.5",
+    created: 1677649963,
+    owned_by: "openai",
+    capabilityUnverified: true,
+  },
+];
+
 test("submits a prompt and renders the response", async ({ page }) => {
   await page.route("**/api/models", async (route) => {
     await route.fulfill({
@@ -309,4 +319,41 @@ test("submitting without selecting a model generates response using default", as
   expect(capturedRequestBody).toEqual({
     prompt: "Test with default model",
   });
+});
+
+test("shows a user-facing error when submitting an unverified-capability model", async ({
+  page,
+}) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModelsWithUnknown }),
+    });
+  });
+
+  await page.route("**/api/respond", async (route) => {
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        message: "Model availability is unverified. Please select a different model.",
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .getByRole("combobox", { name: "Model" })
+    .selectOption("gpt-image-1.5");
+  await page.getByLabel("Prompt").fill("Hello");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Something went wrong");
+  await expect(alert).toContainText(
+    "Model availability is unverified. Please select a different model.",
+  );
 });

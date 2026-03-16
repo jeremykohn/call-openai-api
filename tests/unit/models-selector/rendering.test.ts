@@ -96,4 +96,27 @@ describe("ModelsSelector - Rendering", () => {
     expect(placeholderOption?.attributes("value")).toBe("");
     expect(placeholderOption?.text()).toContain("Select a model");
   });
+
+  it("shows unverified availability caveat for unknown capability models", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: [
+          {
+            id: "gpt-image-1.5",
+            object: "model",
+            created: 1686935002,
+            owned_by: "openai",
+            capabilityUnverified: true,
+          },
+        ],
+        selectedModelId: null,
+        status: "success",
+      },
+    });
+
+    expect(wrapper.text()).toContain("Availability unverified");
+    expect(wrapper.text()).toContain(
+      "One or more models have unverified availability",
+    );
+  });
 });

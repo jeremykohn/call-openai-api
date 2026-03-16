@@ -208,6 +208,52 @@ describe("Server: Model Validation Logic", () => {
     expect(responsesCall).toBeUndefined();
   });
 
+  it("rejects capability-unverified model with 400 status", async () => {
+    requestBody = { prompt: "Hello", model: "gpt-image-1.5" };
+
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/models")) {
+        return buildFetchResponse({
+          ok: true,
+          status: 200,
+          jsonPayload: {
+            data: [
+              {
+                id: "gpt-image-1.5",
+                capabilityUnverified: true,
+              },
+              { id: DEFAULT_MODEL },
+            ],
+          },
+        });
+      }
+
+      if (url.endsWith("/responses")) {
+        return buildFetchResponse({
+          ok: true,
+          status: 200,
+          textPayload: JSON.stringify({ output_text: "Should not happen" }),
+        });
+      }
+
+      throw new Error(
+        `Unexpected URL: ${url} with body ${JSON.stringify(init?.body)}`,
+      );
+    });
+
+    const result = await handler({} as never);
+
+    expect(responseStatus).toBe(400);
+    expect(result).toEqual({
+      message: "Model availability is unverified. Please select a different model.",
+    });
+
+    const responsesCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith("/responses"),
+    );
+    expect(responsesCall).toBeUndefined();
+  });
+
   it("returns 500 when allowlist contains invalid entries", async () => {
     runtimeConfig.openaiAllowedHosts =
       "api.openai.test, https://example.com/v1";

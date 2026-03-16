@@ -21,6 +21,11 @@ let simulateResponsesNetworkError = false;
 let simulateResponsesBodyTruncation = false;
 let lastRequestBody: { model: string; input: string } | null = null;
 let modelsRequestCount = 0;
+let modelsBodyData: Array<Record<string, unknown>> = [
+  { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+  { id: "gpt-3.5-turbo", created: 1686935002, owned_by: "openai" },
+  { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
+];
 
 const resetMockServerState = (): void => {
   mockStatus = 200;
@@ -30,6 +35,11 @@ const resetMockServerState = (): void => {
   simulateResponsesBodyTruncation = false;
   lastRequestBody = null;
   modelsRequestCount = 0;
+  modelsBodyData = [
+    { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+    { id: "gpt-3.5-turbo", created: 1686935002, owned_by: "openai" },
+    { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
+  ];
 };
 
 const mockServer = createServer((request, response) => {
@@ -47,11 +57,7 @@ const mockServer = createServer((request, response) => {
       response.setHeader("Content-Type", "application/json");
       response.end(
         JSON.stringify({
-          data: [
-            { id: "gpt-4", created: 1686935002, owned_by: "openai" },
-            { id: "gpt-3.5-turbo", created: 1686935002, owned_by: "openai" },
-            { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
-          ],
+          data: modelsBodyData,
         }),
       );
       return;
@@ -104,6 +110,7 @@ const mockPort = await new Promise<number>((resolve) => {
 process.env.OPENAI_BASE_URL = `http://127.0.0.1:${mockPort}`;
 process.env.OPENAI_ALLOWED_HOSTS = "127.0.0.1";
 process.env.OPENAI_ALLOW_INSECURE_HTTP = "true";
+process.env.OPENAI_DISABLE_MODEL_VALIDATION_CACHE = "true";
 
 await setup({ rootDir, dev: true });
 
@@ -151,6 +158,37 @@ describe("POST /api/respond", () => {
       response: "Hello from OpenAI",
       model: DEFAULT_MODEL,
     });
+  });
+
+  it("returns user-facing 400 when selected model is capability-unverified", async () => {
+    modelsBodyData = [
+      {
+        id: "gpt-image-1.5",
+        created: 1686935002,
+        owned_by: "openai",
+        capabilityUnverified: true,
+      },
+      { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
+    ];
+
+    try {
+      await $fetch("/api/respond", {
+        method: "POST",
+        body: { prompt: "Hello", model: "gpt-image-1.5" },
+      });
+      throw new Error("Expected request to fail");
+    } catch (error) {
+      const fetchError = error as {
+        statusCode?: number;
+        status?: number;
+        data?: { message?: string };
+      };
+
+      expect(fetchError.statusCode ?? fetchError.status).toBe(400);
+      expect(fetchError.data?.message).toBe(
+        "Model availability is unverified. Please select a different model.",
+      );
+    }
   });
 
   it("returns API error details when upstream fails", async () => {
@@ -235,7 +273,7 @@ describe("POST /api/respond", () => {
     expect(result.model).toBe("gpt-3.5-turbo");
   });
 
-  it("reuses cached models after /api/models fetch", async () => {
+  it("re-validates models after /api/models fetch when validation cache is disabled", async () => {
     await $fetch("/api/models");
 
     await $fetch<ApiSuccessResponse>("/api/respond", {
@@ -243,7 +281,7 @@ describe("POST /api/respond", () => {
       body: { prompt: "Hello", model: "gpt-4" },
     });
 
-    expect(modelsRequestCount).toBe(1);
+    expect(modelsRequestCount).toBe(2);
   });
 
   it("returns stable error contract when upstream response body cannot be read", async () => {

@@ -5,6 +5,8 @@ import { buildOpenAIUrl } from "./openai-security";
 
 const MODELS_PATH = "models";
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const DISABLE_MODEL_VALIDATION_CACHE =
+  process.env.OPENAI_DISABLE_MODEL_VALIDATION_CACHE === "true";
 
 type ModelResolutionError = {
   error: string;
@@ -15,7 +17,7 @@ export type ModelResolutionResult = { model: string } | ModelResolutionError;
 
 type ModelsCache = {
   cacheKey: string;
-  models: string[];
+  models: Array<{ id: string; capabilityUnverified?: boolean }>;
   timestamp: number;
 };
 
@@ -28,7 +30,13 @@ const buildCacheKey = (baseUrl: string): string => {
   return baseUrl;
 };
 
-const getCachedModels = (baseUrl: string): string[] | null => {
+const getCachedModels = (
+  baseUrl: string,
+): Array<{ id: string; capabilityUnverified?: boolean }> | null => {
+  if (DISABLE_MODEL_VALIDATION_CACHE) {
+    return null;
+  }
+
   const cacheKey = buildCacheKey(baseUrl);
 
   if (!modelsCache || modelsCache.cacheKey !== cacheKey) {
@@ -45,7 +53,7 @@ const getCachedModels = (baseUrl: string): string[] | null => {
 const fetchAvailableModels = async (
   apiKey: string,
   baseUrl: string,
-): Promise<string[] | null> => {
+): Promise<Array<{ id: string; capabilityUnverified?: boolean }> | null> => {
   const cachedModels = getCachedModels(baseUrl);
   if (cachedModels) {
     return cachedModels;
@@ -65,13 +73,18 @@ const fetchAvailableModels = async (
     }
 
     const payload = (await response.json()) as { data?: OpenAIModel[] };
-    const models = (payload.data ?? []).map((model) => model.id);
+    const models = (payload.data ?? []).map((model) => ({
+      id: model.id,
+      capabilityUnverified: model.capabilityUnverified,
+    }));
 
-    modelsCache = {
-      cacheKey: buildCacheKey(baseUrl),
-      models,
-      timestamp: Date.now(),
-    };
+    if (!DISABLE_MODEL_VALIDATION_CACHE) {
+      modelsCache = {
+        cacheKey: buildCacheKey(baseUrl),
+        models,
+        timestamp: Date.now(),
+      };
+    }
 
     return models;
   } catch {
@@ -97,9 +110,18 @@ export const resolveModel = async (
     };
   }
 
-  if (!availableModels.includes(requestedModel)) {
+  const matchedModel = availableModels.find((model) => model.id === requestedModel);
+
+  if (!matchedModel) {
     return {
       error: "Model is not valid",
+      statusCode: HTTP_STATUS.BAD_REQUEST,
+    };
+  }
+
+  if (matchedModel.capabilityUnverified) {
+    return {
+      error: "Model availability is unverified. Please select a different model.",
       statusCode: HTTP_STATUS.BAD_REQUEST,
     };
   }
@@ -116,11 +138,18 @@ export const clearModelsCache = (): void => {
 
 export const cacheModelsForBaseUrl = (
   baseUrl: string,
-  models: readonly Pick<OpenAIModel, "id">[],
+  models: readonly Pick<OpenAIModel, "id" | "capabilityUnverified">[],
 ): void => {
+  if (DISABLE_MODEL_VALIDATION_CACHE) {
+    return;
+  }
+
   modelsCache = {
     cacheKey: buildCacheKey(baseUrl),
-    models: models.map((model) => model.id),
+    models: models.map((model) => ({
+      id: model.id,
+      capabilityUnverified: model.capabilityUnverified,
+    })),
     timestamp: Date.now(),
   };
 };

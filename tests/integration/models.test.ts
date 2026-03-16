@@ -3,9 +3,15 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
+import { clearCapabilityCache } from "../../server/utils/model-capability";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
+const overridesDir = mkdtempSync(join(tmpdir(), "models-overrides-"));
+const overridesPath = join(overridesDir, "allowed-models-overrides.json");
 
 // Must be captured before any process.env mutations below.
 const env = captureEnvVars([...ENV_KEYS]);
@@ -24,6 +30,8 @@ let mockBody: unknown = {
 };
 let mockRawBody: string | null = null;
 let simulateModelsNetworkError = false;
+let probeByModelId: Record<string, { status: number; body: unknown }> = {};
+let modelsRequestCount = 0;
 
 const resetMockServerState = (): void => {
   mockStatus = 200;
@@ -40,7 +48,8 @@ const resetMockServerState = (): void => {
   };
   mockRawBody = null;
   simulateModelsNetworkError = false;
-  lastRequest = {};
+  probeByModelId = {};
+  modelsRequestCount = 0;
 };
 
 interface TestRequest {
@@ -48,28 +57,55 @@ interface TestRequest {
   authorization?: string;
 }
 
-let lastRequest: TestRequest = {};
+let lastModelsRequest: TestRequest = {};
 
 const mockServer = createServer((request, response) => {
-  lastRequest = {
-    url: request.url ?? undefined,
-    authorization: request.headers.authorization,
-  };
+  if (request.url === "/models") {
+    modelsRequestCount += 1;
+    lastModelsRequest = {
+      url: request.url ?? undefined,
+      authorization: request.headers.authorization,
+    };
 
-  if (request.url !== "/models") {
+    if (simulateModelsNetworkError) {
+      response.destroy(new Error("Simulated upstream models connection reset"));
+      return;
+    }
+
+    response.statusCode = mockStatus;
+    response.setHeader("Content-Type", "application/json");
+    response.end(mockRawBody ?? JSON.stringify(mockBody));
+    return;
+  }
+
+  if (request.url === "/responses" && request.method === "POST") {
+    let raw = "";
+    request.on("data", (chunk) => {
+      raw += chunk;
+    });
+    request.on("end", () => {
+      const parsed = JSON.parse(raw) as { model?: string };
+      const modelId = parsed.model ?? "";
+      const configured = probeByModelId[modelId] ?? {
+        status: 200,
+        body: { id: "probe-ok" },
+      };
+
+      response.statusCode = configured.status;
+      response.setHeader("Content-Type", "application/json");
+      response.end(JSON.stringify(configured.body));
+    });
+    return;
+  }
+
+  if (!request.url) {
     response.statusCode = 404;
     response.end();
     return;
   }
 
-  if (simulateModelsNetworkError) {
-    response.destroy(new Error("Simulated upstream models connection reset"));
-    return;
-  }
-
-  response.statusCode = mockStatus;
-  response.setHeader("Content-Type", "application/json");
-  response.end(mockRawBody ?? JSON.stringify(mockBody));
+  response.statusCode = 404;
+  response.end();
 });
 
 const mockPort = await new Promise<number>((resolve) => {
@@ -83,15 +119,30 @@ process.env.OPENAI_BASE_URL = `http://127.0.0.1:${mockPort}`;
 process.env.OPENAI_ALLOWED_HOSTS = "127.0.0.1";
 process.env.OPENAI_API_KEY = "test-key";
 process.env.OPENAI_ALLOW_INSECURE_HTTP = "true";
+process.env.OPENAI_ALLOWED_MODELS_OVERRIDES_PATH = overridesPath;
+process.env.OPENAI_DISABLE_MODELS_CACHE = "true";
+
+writeFileSync(
+  overridesPath,
+  JSON.stringify({ allowed_models: [], disallowed_models: [] }),
+  "utf8",
+);
 
 await setup({ rootDir, dev: true });
 
 beforeEach(() => {
   resetMockServerState();
+  clearCapabilityCache();
+  writeFileSync(
+    overridesPath,
+    JSON.stringify({ allowed_models: [], disallowed_models: [] }),
+    "utf8",
+  );
 });
 
 afterAll(() => {
   mockServer.close();
+  rmSync(overridesDir, { recursive: true, force: true });
   env.restoreAll();
 });
 
@@ -123,11 +174,12 @@ describe("GET /api/models", () => {
   it("constructs the correct URL and includes authorization header", async () => {
     await $fetch("/api/models");
 
-    expect(lastRequest.url).toBe("/models");
-    expect(lastRequest.authorization).toBe("Bearer test-key");
+    expect(modelsRequestCount).toBeGreaterThan(0);
+    expect(lastModelsRequest.url).toBe("/models");
+    expect(lastModelsRequest.authorization).toBe("Bearer test-key");
   });
 
-  it("returns only Responses API-supported models with object field set to 'list'", async () => {
+  it("returns supported models and excludes known unsupported probe results", async () => {
     mockBody = {
       object: "list",
       data: [
@@ -152,6 +204,19 @@ describe("GET /api/models", () => {
       ],
     };
 
+    probeByModelId = {
+      "gpt-4o-mini-transcribe-2025-12-15": {
+        status: 400,
+        body: {
+          error: {
+            type: "invalid_request_error",
+            code: "model_not_found",
+            param: "model",
+          },
+        },
+      },
+    };
+
     const result = await $fetch<{
       object: "list";
       data: Array<{
@@ -174,6 +239,83 @@ describe("GET /api/models", () => {
       created: 1686935002,
       owned_by: "openai",
     });
+  });
+
+  it("includes unknown capability models with capabilityUnverified caveat", async () => {
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "gpt-test-1",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+        {
+          id: "gpt-image-1.5",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    probeByModelId = {
+      "gpt-image-1.5": {
+        status: 503,
+        body: { error: { code: "service_unavailable" } },
+      },
+    };
+
+    const result = await $fetch<{
+      object: "list";
+      data: Array<{
+        id: string;
+        capabilityUnverified?: boolean;
+      }>;
+    }>("/api/models");
+
+    expect(result.object).toBe("list");
+    expect(result.data.map((model) => model.id)).toEqual([
+      "gpt-test-1",
+      "gpt-image-1.5",
+    ]);
+    expect(
+      result.data.find((model) => model.id === "gpt-image-1.5")
+        ?.capabilityUnverified,
+    ).toBe(true);
+  });
+
+  it("applies deny/allow overrides from config file", async () => {
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "gpt-4.1-mini",
+          object: "model",
+          created: 1,
+          owned_by: "openai",
+        },
+        {
+          id: "dall-e-3",
+          object: "model",
+          created: 2,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    writeFileSync(
+      overridesPath,
+      JSON.stringify({
+        allowed_models: ["dall-e-3"],
+        disallowed_models: ["gpt-4.1-mini"],
+      }),
+      "utf8",
+    );
+
+    const result = await $fetch<{ data: Array<{ id: string }> }>("/api/models");
+    expect(result.data.map((model) => model.id)).toEqual(["dall-e-3"]);
   });
 
   it("returns error message and details when upstream fails", async () => {

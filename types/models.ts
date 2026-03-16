@@ -3,6 +3,7 @@ export type OpenAIModel = {
   object: "model";
   created: number;
   owned_by: string;
+  capabilityUnverified?: boolean;
 };
 
 export type ModelsResponse = {

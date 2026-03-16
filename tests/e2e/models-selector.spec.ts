@@ -5,6 +5,16 @@ const mockModels = [
   { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
 ];
 
+const mockModelsWithUnknown = [
+  { id: "gpt-4", created: 1686935002, owned_by: "openai" },
+  {
+    id: "gpt-image-1.5",
+    created: 1677649963,
+    owned_by: "openai",
+    capabilityUnverified: true,
+  },
+];
+
 test("loads models and allows selection", async ({ page }) => {
   await page.route("**/api/models", async (route) => {
     await route.fulfill({
@@ -111,4 +121,28 @@ test("disables selector and shows empty-state text when no models", async ({
 
   const firstOption = select.locator("option").first();
   await expect(firstOption).toHaveText("No models available");
+});
+
+test("shows unknown-model caveat text and option label", async ({ page }) => {
+  await page.route("**/api/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data: mockModelsWithUnknown }),
+    });
+  });
+
+  await page.goto("/");
+
+  const select = page.getByRole("combobox", { name: "Model" });
+  await expect(select).toBeVisible();
+
+  const unknownOption = select.locator("option[value='gpt-image-1.5']");
+  await expect(unknownOption).toContainText("Availability unverified");
+
+  await expect(
+    page.getByText(
+      "One or more models have unverified availability and may fail during submission.",
+    ),
+  ).toBeVisible();
 });
