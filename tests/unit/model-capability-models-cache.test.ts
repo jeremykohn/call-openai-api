@@ -33,7 +33,11 @@ describe("model capability models cache", () => {
   it("marks cached models as stale after 24h TTL", () => {
     clearCachedModelsResponse();
     const now = 1_700_000_000_000;
-    writeCachedModelsResponse(baseUrl, staleModels, now - CAPABILITY_CACHE_TTL_MS - 1);
+    writeCachedModelsResponse(
+      baseUrl,
+      staleModels,
+      now - CAPABILITY_CACHE_TTL_MS - 1,
+    );
 
     const cached = readCachedModelsResponse(baseUrl, now);
     expect(cached?.fresh).toBe(false);
@@ -43,7 +47,11 @@ describe("model capability models cache", () => {
   it("returns stale data immediately and refreshes in background", async () => {
     clearCachedModelsResponse();
     const now = 1_700_000_000_000;
-    writeCachedModelsResponse(baseUrl, staleModels, now - CAPABILITY_CACHE_TTL_MS - 1);
+    writeCachedModelsResponse(
+      baseUrl,
+      staleModels,
+      now - CAPABILITY_CACHE_TTL_MS - 1,
+    );
 
     const staleRead = readCachedModelsResponse(baseUrl, now);
     expect(staleRead?.fresh).toBe(false);

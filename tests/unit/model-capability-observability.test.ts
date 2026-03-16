@@ -30,7 +30,9 @@ describe("model capability observability", () => {
   });
 
   it("logs info events as structured JSON", () => {
-    logCapabilityInfo("models.cache.miss", { baseUrl: "https://api.openai.com/v1" });
+    logCapabilityInfo("models.cache.miss", {
+      baseUrl: "https://api.openai.com/v1",
+    });
 
     expect(infoSpy).toHaveBeenCalledTimes(1);
     const payload = JSON.parse(String(infoSpy.mock.calls[0]?.[0]));

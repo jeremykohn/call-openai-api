@@ -58,7 +58,8 @@
         {{ hasModels ? "Select a model" : "No models available" }}
       </option>
       <option v-for="model in models" :key="model.id" :value="model.id">
-        {{ model.id }}{{ model.capabilityUnverified ? " (Availability unverified)" : "" }}
+        {{ model.id
+        }}{{ model.capabilityUnverified ? " (Availability unverified)" : "" }}
       </option>
     </select>
 

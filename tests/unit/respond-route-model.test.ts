@@ -245,7 +245,8 @@ describe("Server: Model Validation Logic", () => {
 
     expect(responseStatus).toBe(400);
     expect(result).toEqual({
-      message: "Model availability is unverified. Please select a different model.",
+      message:
+        "Model availability is unverified. Please select a different model.",
     });
 
     const responsesCall = fetchMock.mock.calls.find(([url]) =>

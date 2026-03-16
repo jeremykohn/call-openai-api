@@ -110,7 +110,9 @@ export const resolveModel = async (
     };
   }
 
-  const matchedModel = availableModels.find((model) => model.id === requestedModel);
+  const matchedModel = availableModels.find(
+    (model) => model.id === requestedModel,
+  );
 
   if (!matchedModel) {
     return {
@@ -121,7 +123,8 @@ export const resolveModel = async (
 
   if (matchedModel.capabilityUnverified) {
     return {
-      error: "Model availability is unverified. Please select a different model.",
+      error:
+        "Model availability is unverified. Please select a different model.",
       statusCode: HTTP_STATUS.BAD_REQUEST,
     };
   }

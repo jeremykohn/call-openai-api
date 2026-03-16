@@ -337,7 +337,8 @@ test("shows a user-facing error when submitting an unverified-capability model",
       status: 400,
       contentType: "application/json",
       body: JSON.stringify({
-        message: "Model availability is unverified. Please select a different model.",
+        message:
+          "Model availability is unverified. Please select a different model.",
       }),
     });
   });

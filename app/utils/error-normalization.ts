@@ -4,7 +4,10 @@ import {
   isApiError,
   isNetworkFetchError,
 } from "./type-guards";
-import { sanitizeOptionalErrorText, sanitizeErrorText } from "./error-sanitization";
+import {
+  sanitizeOptionalErrorText,
+  sanitizeErrorText,
+} from "./error-sanitization";
 
 export type UiErrorCategory = "network" | "api" | "unknown";
 
