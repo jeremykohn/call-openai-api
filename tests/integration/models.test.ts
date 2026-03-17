@@ -3,15 +3,9 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
-import { clearCapabilityCache } from "../../server/utils/model-capability";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
-const overridesDir = mkdtempSync(join(tmpdir(), "models-overrides-"));
-const overridesPath = join(overridesDir, "allowed-models-overrides.json");
 
 // Must be captured before any process.env mutations below.
 const env = captureEnvVars([...ENV_KEYS]);
@@ -30,8 +24,8 @@ let mockBody: unknown = {
 };
 let mockRawBody: string | null = null;
 let simulateModelsNetworkError = false;
-let probeByModelId: Record<string, { status: number; body: unknown }> = {};
 let modelsRequestCount = 0;
+let responsesRequestCount = 0;
 
 const resetMockServerState = (): void => {
   mockStatus = 200;
@@ -48,8 +42,8 @@ const resetMockServerState = (): void => {
   };
   mockRawBody = null;
   simulateModelsNetworkError = false;
-  probeByModelId = {};
   modelsRequestCount = 0;
+  responsesRequestCount = 0;
 };
 
 interface TestRequest {
@@ -79,22 +73,10 @@ const mockServer = createServer((request, response) => {
   }
 
   if (request.url === "/responses" && request.method === "POST") {
-    let raw = "";
-    request.on("data", (chunk) => {
-      raw += chunk;
-    });
-    request.on("end", () => {
-      const parsed = JSON.parse(raw) as { model?: string };
-      const modelId = parsed.model ?? "";
-      const configured = probeByModelId[modelId] ?? {
-        status: 200,
-        body: { id: "probe-ok" },
-      };
-
-      response.statusCode = configured.status;
-      response.setHeader("Content-Type", "application/json");
-      response.end(JSON.stringify(configured.body));
-    });
+    responsesRequestCount += 1;
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/json");
+    response.end(JSON.stringify({ id: "probe-ok" }));
     return;
   }
 
@@ -119,30 +101,16 @@ process.env.OPENAI_BASE_URL = `http://127.0.0.1:${mockPort}`;
 process.env.OPENAI_ALLOWED_HOSTS = "127.0.0.1";
 process.env.OPENAI_API_KEY = "test-key";
 process.env.OPENAI_ALLOW_INSECURE_HTTP = "true";
-process.env.OPENAI_ALLOWED_MODELS_OVERRIDES_PATH = overridesPath;
 process.env.OPENAI_DISABLE_MODELS_CACHE = "true";
-
-writeFileSync(
-  overridesPath,
-  JSON.stringify({ allowed_models: [], disallowed_models: [] }),
-  "utf8",
-);
 
 await setup({ rootDir, dev: true });
 
 beforeEach(() => {
   resetMockServerState();
-  clearCapabilityCache();
-  writeFileSync(
-    overridesPath,
-    JSON.stringify({ allowed_models: [], disallowed_models: [] }),
-    "utf8",
-  );
 });
 
 afterAll(() => {
   mockServer.close();
-  rmSync(overridesDir, { recursive: true, force: true });
   env.restoreAll();
 });
 
@@ -179,7 +147,7 @@ describe("GET /api/models", () => {
     expect(lastModelsRequest.authorization).toBe("Bearer test-key");
   });
 
-  it("returns supported models and excludes known unsupported probe results", async () => {
+  it("returns all upstream models without filtering", async () => {
     mockBody = {
       object: "list",
       data: [
@@ -204,19 +172,6 @@ describe("GET /api/models", () => {
       ],
     };
 
-    probeByModelId = {
-      "gpt-4o-mini-transcribe-2025-12-15": {
-        status: 400,
-        body: {
-          error: {
-            type: "invalid_request_error",
-            code: "model_not_found",
-            param: "model",
-          },
-        },
-      },
-    };
-
     const result = await $fetch<{
       object: "list";
       data: Array<{
@@ -228,10 +183,11 @@ describe("GET /api/models", () => {
     }>("/api/models");
 
     expect(result.object).toBe("list");
-    expect(result.data).toHaveLength(2);
+    expect(result.data).toHaveLength(3);
     expect(result.data.map((model) => model.id)).toEqual([
       "gpt-test-1",
       "gpt-test-2",
+      "gpt-4o-mini-transcribe-2025-12-15",
     ]);
     expect(result.data[0]).toEqual({
       id: "gpt-test-1",
@@ -241,7 +197,7 @@ describe("GET /api/models", () => {
     });
   });
 
-  it("includes unknown capability models with capabilityUnverified caveat", async () => {
+  it("does not annotate models with capability caveat fields", async () => {
     mockBody = {
       object: "list",
       data: [
@@ -260,18 +216,10 @@ describe("GET /api/models", () => {
       ],
     };
 
-    probeByModelId = {
-      "gpt-image-1.5": {
-        status: 503,
-        body: { error: { code: "service_unavailable" } },
-      },
-    };
-
     const result = await $fetch<{
       object: "list";
       data: Array<{
         id: string;
-        capabilityUnverified?: boolean;
       }>;
     }>("/api/models");
 
@@ -281,41 +229,16 @@ describe("GET /api/models", () => {
       "gpt-image-1.5",
     ]);
     expect(
-      result.data.find((model) => model.id === "gpt-image-1.5")
-        ?.capabilityUnverified,
-    ).toBe(true);
+      "capabilityUnverified" in
+        (result.data.find((model) => model.id === "gpt-image-1.5") ?? {}),
+    ).toBe(false);
   });
 
-  it("applies deny/allow overrides from config file", async () => {
-    mockBody = {
-      object: "list",
-      data: [
-        {
-          id: "gpt-4.1-mini",
-          object: "model",
-          created: 1,
-          owned_by: "openai",
-        },
-        {
-          id: "dall-e-3",
-          object: "model",
-          created: 2,
-          owned_by: "openai",
-        },
-      ],
-    };
+  it("does not call /responses while serving /api/models", async () => {
+    await $fetch("/api/models");
 
-    writeFileSync(
-      overridesPath,
-      JSON.stringify({
-        allowed_models: ["dall-e-3"],
-        disallowed_models: ["gpt-4.1-mini"],
-      }),
-      "utf8",
-    );
-
-    const result = await $fetch<{ data: Array<{ id: string }> }>("/api/models");
-    expect(result.data.map((model) => model.id)).toEqual(["dall-e-3"]);
+    expect(modelsRequestCount).toBeGreaterThan(0);
+    expect(responsesRequestCount).toBe(0);
   });
 
   it("returns error message and details when upstream fails", async () => {

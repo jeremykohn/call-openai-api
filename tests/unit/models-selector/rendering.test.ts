@@ -97,7 +97,7 @@ describe("ModelsSelector - Rendering", () => {
     expect(placeholderOption?.text()).toContain("Select a model");
   });
 
-  it("shows unverified availability caveat for unknown capability models", () => {
+  it("does not render unverified availability caveat text", () => {
     const wrapper = mount(ModelsSelector, {
       props: {
         models: [
@@ -106,7 +106,6 @@ describe("ModelsSelector - Rendering", () => {
             object: "model",
             created: 1686935002,
             owned_by: "openai",
-            capabilityUnverified: true,
           },
         ],
         selectedModelId: null,
@@ -114,9 +113,7 @@ describe("ModelsSelector - Rendering", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Availability unverified");
-    expect(wrapper.text()).toContain(
-      "One or more models have unverified availability",
-    );
+    expect(wrapper.text()).not.toContain("Availability unverified");
+    expect(wrapper.text()).not.toContain("unverified availability");
   });
 });

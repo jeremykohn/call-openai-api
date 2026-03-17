@@ -160,35 +160,22 @@ describe("POST /api/respond", () => {
     });
   });
 
-  it("returns user-facing 400 when selected model is capability-unverified", async () => {
+  it("accepts selected model when present in /models list", async () => {
     modelsBodyData = [
       {
         id: "gpt-image-1.5",
         created: 1686935002,
         owned_by: "openai",
-        capabilityUnverified: true,
       },
       { id: DEFAULT_MODEL, created: 1686935002, owned_by: "openai" },
     ];
 
-    try {
-      await $fetch("/api/respond", {
-        method: "POST",
-        body: { prompt: "Hello", model: "gpt-image-1.5" },
-      });
-      throw new Error("Expected request to fail");
-    } catch (error) {
-      const fetchError = error as {
-        statusCode?: number;
-        status?: number;
-        data?: { message?: string };
-      };
+    const result = await $fetch<ApiSuccessResponse>("/api/respond", {
+      method: "POST",
+      body: { prompt: "Hello", model: "gpt-image-1.5" },
+    });
 
-      expect(fetchError.statusCode ?? fetchError.status).toBe(400);
-      expect(fetchError.data?.message).toBe(
-        "Model availability is unverified. Please select a different model.",
-      );
-    }
+    expect(result.model).toBe("gpt-image-1.5");
   });
 
   it("returns API error details when upstream fails", async () => {

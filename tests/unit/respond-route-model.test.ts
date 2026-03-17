@@ -208,7 +208,7 @@ describe("Server: Model Validation Logic", () => {
     expect(responsesCall).toBeUndefined();
   });
 
-  it("rejects capability-unverified model with 400 status", async () => {
+  it("accepts listed model even when upstream includes extra metadata", async () => {
     requestBody = { prompt: "Hello", model: "gpt-image-1.5" };
 
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
@@ -243,16 +243,16 @@ describe("Server: Model Validation Logic", () => {
 
     const result = await handler({} as never);
 
-    expect(responseStatus).toBe(400);
+    expect(responseStatus).toBe(200);
     expect(result).toEqual({
-      message:
-        "Model availability is unverified. Please select a different model.",
+      response: "Should not happen",
+      model: "gpt-image-1.5",
     });
 
     const responsesCall = fetchMock.mock.calls.find(([url]) =>
       String(url).endsWith("/responses"),
     );
-    expect(responsesCall).toBeUndefined();
+    expect(responsesCall).toBeDefined();
   });
 
   it("returns 500 when allowlist contains invalid entries", async () => {

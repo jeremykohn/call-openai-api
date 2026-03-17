@@ -58,8 +58,7 @@
         {{ hasModels ? "Select a model" : "No models available" }}
       </option>
       <option v-for="model in models" :key="model.id" :value="model.id">
-        {{ model.id
-        }}{{ model.capabilityUnverified ? " (Availability unverified)" : "" }}
+        {{ model.id }}
       </option>
     </select>
 
@@ -70,15 +69,6 @@
     >
       Uses <code class="font-mono">{{ DEFAULT_MODEL }}</code> by default if none
       is selected.
-    </p>
-
-    <p
-      v-if="status !== 'loading' && hasUnverifiedModels"
-      id="models-select-caveat"
-      class="text-xs text-amber-700"
-    >
-      One or more models have unverified availability and may fail during
-      submission.
     </p>
 
     <!-- Error Message -->
@@ -123,15 +113,9 @@ const props = defineProps<{
 }>();
 
 const hasModels = computed(() => props.models.length > 0);
-const hasUnverifiedModels = computed(() =>
-  props.models.some((model) => model.capabilityUnverified === true),
-);
 
 const describedBy = computed(() => {
   const ids = ["models-select-help"];
-  if (hasUnverifiedModels.value) {
-    ids.push("models-select-caveat");
-  }
   if (props.status === "error" && props.error) {
     ids.unshift("models-select-error");
   }

@@ -17,7 +17,7 @@ export type ModelResolutionResult = { model: string } | ModelResolutionError;
 
 type ModelsCache = {
   cacheKey: string;
-  models: Array<{ id: string; capabilityUnverified?: boolean }>;
+  models: Array<{ id: string }>;
   timestamp: number;
 };
 
@@ -30,9 +30,7 @@ const buildCacheKey = (baseUrl: string): string => {
   return baseUrl;
 };
 
-const getCachedModels = (
-  baseUrl: string,
-): Array<{ id: string; capabilityUnverified?: boolean }> | null => {
+const getCachedModels = (baseUrl: string): Array<{ id: string }> | null => {
   if (DISABLE_MODEL_VALIDATION_CACHE) {
     return null;
   }
@@ -53,7 +51,7 @@ const getCachedModels = (
 const fetchAvailableModels = async (
   apiKey: string,
   baseUrl: string,
-): Promise<Array<{ id: string; capabilityUnverified?: boolean }> | null> => {
+): Promise<Array<{ id: string }> | null> => {
   const cachedModels = getCachedModels(baseUrl);
   if (cachedModels) {
     return cachedModels;
@@ -75,7 +73,6 @@ const fetchAvailableModels = async (
     const payload = (await response.json()) as { data?: OpenAIModel[] };
     const models = (payload.data ?? []).map((model) => ({
       id: model.id,
-      capabilityUnverified: model.capabilityUnverified,
     }));
 
     if (!DISABLE_MODEL_VALIDATION_CACHE) {
@@ -121,14 +118,6 @@ export const resolveModel = async (
     };
   }
 
-  if (matchedModel.capabilityUnverified) {
-    return {
-      error:
-        "Model availability is unverified. Please select a different model.",
-      statusCode: HTTP_STATUS.BAD_REQUEST,
-    };
-  }
-
   return { model: requestedModel };
 };
 
@@ -141,7 +130,7 @@ export const clearModelsCache = (): void => {
 
 export const cacheModelsForBaseUrl = (
   baseUrl: string,
-  models: readonly Pick<OpenAIModel, "id" | "capabilityUnverified">[],
+  models: readonly Pick<OpenAIModel, "id">[],
 ): void => {
   if (DISABLE_MODEL_VALIDATION_CACHE) {
     return;
@@ -151,7 +140,6 @@ export const cacheModelsForBaseUrl = (
     cacheKey: buildCacheKey(baseUrl),
     models: models.map((model) => ({
       id: model.id,
-      capabilityUnverified: model.capabilityUnverified,
     })),
     timestamp: Date.now(),
   };
