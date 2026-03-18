@@ -5,11 +5,15 @@ A simple Nuxt 4 app that sends a prompt to the OpenAI Responses API, shows a loa
 Notes:
 
 - Prompts are limited to 4000 characters.
-- The model dropdown includes all models returned by the OpenAI Models API.
+- The model dropdown is sourced from OpenAI models and may be filtered by local config.
 
 ## Model list behavior
 
-- The server route `GET /api/models` proxies OpenAI's models API and returns the upstream model list without capability filtering.
+- The server route `GET /api/models` proxies OpenAI's models API, then applies optional config-driven filtering from `server/config/models/openai-models.json`.
+- A sample config file is provided at `server/config/models/openai-models.json.example`.
+- In config-valid mode, models listed in `models-with-error` and `models-with-no-response` are excluded from the dropdown.
+- In fallback mode (missing, unreadable, malformed, or invalid config), the dropdown includes the full upstream list and displays: `Note: List of OpenAI models may include some older models that are no longer available.`
+- The dropdown model list is sorted alphabetically in both config-valid and fallback modes.
 - The route still enforces OpenAI configuration and allowed-host security checks before returning data.
 - Model list responses are cached in server memory and may be served from cache when available.
 - Submit-time validation accepts any selected model that exists in the fetched models list.

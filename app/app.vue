@@ -34,6 +34,7 @@
           :status="modelsState.status"
           :error="modelsState.error ?? null"
           :error-details="modelsState.errorDetails ?? null"
+          :show-fallback-note="modelsState.showFallbackNote"
           @retry="fetchModels"
         />
         <label class="text-sm font-semibold text-slate-700" for="prompt-input"

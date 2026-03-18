@@ -19,6 +19,11 @@ import {
   triggerCachedModelsBackgroundRefresh,
   writeCachedModelsResponse,
 } from "../utils/models-response-cache";
+import {
+  buildExcludedModelIdSet,
+  filterAndSortModelsForDropdown,
+} from "../utils/openai-models-config";
+import { loadOpenAIModelsConfig } from "../utils/openai-models-config-loader";
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";
@@ -57,6 +62,34 @@ export default defineEventHandler(async (event: H3Event) => {
       message: "OpenAI base URL is not allowed.",
     } satisfies ModelsErrorResponse;
   }
+
+  const buildModelsResponse = async (
+    upstreamModels: ModelsResponse["data"],
+  ): Promise<ModelsResponse> => {
+    const configResult = await loadOpenAIModelsConfig();
+
+    if (configResult.mode === "config-valid") {
+      const excludedModelIds = buildExcludedModelIdSet(configResult.config);
+      const filteredModels = filterAndSortModelsForDropdown(
+        upstreamModels,
+        excludedModelIds,
+      );
+
+      return {
+        object: "list",
+        data: filteredModels,
+        usedConfigFilter: true,
+        showFallbackNote: false,
+      } satisfies ModelsResponse;
+    }
+
+    return {
+      object: "list",
+      data: filterAndSortModelsForDropdown(upstreamModels, new Set<string>()),
+      usedConfigFilter: false,
+      showFallbackNote: true,
+    } satisfies ModelsResponse;
+  };
 
   const fetchModels = async (): Promise<ModelsResponse> => {
     const requestUrl = buildOpenAIUrl(baseUrl, OPENAI_PATH);
@@ -112,19 +145,13 @@ export default defineEventHandler(async (event: H3Event) => {
       writeCachedModelsResponse(baseUrl, upstreamModels);
     }
 
-    return {
-      object: "list",
-      data: upstreamModels,
-    } satisfies ModelsResponse;
+    return buildModelsResponse(upstreamModels);
   };
 
   if (shouldUseResponseCache) {
     const cached = readCachedModelsResponse(baseUrl);
     if (cached?.fresh) {
-      return {
-        object: "list",
-        data: cached.models,
-      } satisfies ModelsResponse;
+      return buildModelsResponse(cached.models);
     }
 
     if (cached && !cached.fresh) {
@@ -133,10 +160,7 @@ export default defineEventHandler(async (event: H3Event) => {
         return [...refreshed.data];
       });
 
-      return {
-        object: "list",
-        data: cached.models,
-      } satisfies ModelsResponse;
+      return buildModelsResponse(cached.models);
     }
   }
 

@@ -53,7 +53,11 @@ describe("useModelsState", () => {
     const mockData: OpenAIModel[] = [
       { id: "gpt-4", object: "model", created: 1686935002, owned_by: "openai" },
     ];
-    const mockFetch = vi.fn().mockResolvedValue({ data: mockData });
+    const mockFetch = vi.fn().mockResolvedValue({
+      data: mockData,
+      usedConfigFilter: true,
+      showFallbackNote: false,
+    });
     vi.stubGlobal("$fetch", mockFetch);
 
     const { state, fetchModels } = useModelsState();
@@ -62,7 +66,33 @@ describe("useModelsState", () => {
 
     expect(state.value.status).toBe("success");
     expect(state.value.data).toEqual(mockData);
+    expect(state.value.usedConfigFilter).toBe(true);
+    expect(state.value.showFallbackNote).toBe(false);
     expect(state.value.error).toBeNull();
+  });
+
+  it("captures fallback metadata from /api/models response", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: "gpt-4",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+      ],
+      usedConfigFilter: false,
+      showFallbackNote: true,
+    });
+    vi.stubGlobal("$fetch", mockFetch);
+
+    const { state, fetchModels } = useModelsState();
+
+    await fetchModels();
+
+    expect(state.value.status).toBe("success");
+    expect(state.value.usedConfigFilter).toBe(false);
+    expect(state.value.showFallbackNote).toBe(true);
   });
 
   it("status transitions to error with canonical message when network fails", async () => {

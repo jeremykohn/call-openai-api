@@ -3,9 +3,13 @@ import { $fetch, setup } from "@nuxt/test-utils";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { rm, writeFile } from "node:fs/promises";
 import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
+const configFilePath = fileURLToPath(
+  new URL("../../server/config/models/openai-models.json", import.meta.url),
+);
 
 // Must be captured before any process.env mutations below.
 const env = captureEnvVars([...ENV_KEYS]);
@@ -114,7 +118,19 @@ afterAll(() => {
   env.restoreAll();
 });
 
+const removeConfigFileIfPresent = async (): Promise<void> => {
+  await rm(configFilePath, { force: true });
+};
+
+const writeConfigFile = async (content: string): Promise<void> => {
+  await writeFile(configFilePath, content, "utf-8");
+};
+
 describe("GET /api/models", () => {
+  beforeEach(async () => {
+    await removeConfigFileIfPresent();
+  });
+
   it("returns upstream 401 when OpenAI models API rejects the request", async () => {
     // The route checks runtime config, which is set at startup.
     // This test verifies the error handling pathway exists by checking
@@ -147,24 +163,24 @@ describe("GET /api/models", () => {
     expect(lastModelsRequest.authorization).toBe("Bearer test-key");
   });
 
-  it("returns all upstream models without filtering", async () => {
+  it("returns all upstream models in alphabetical order when config is missing", async () => {
     mockBody = {
       object: "list",
       data: [
         {
-          id: "gpt-test-1",
+          id: "z-model",
           object: "model",
           created: 1686935002,
           owned_by: "openai",
         },
         {
-          id: "gpt-test-2",
+          id: "a-model",
           object: "model",
           created: 1686935003,
           owned_by: "openai",
         },
         {
-          id: "gpt-4o-mini-transcribe-2025-12-15",
+          id: "m-model",
           object: "model",
           created: 1686935004,
           owned_by: "openai",
@@ -180,24 +196,34 @@ describe("GET /api/models", () => {
         created: number;
         owned_by: string;
       }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
     }>("/api/models");
 
     expect(result.object).toBe("list");
     expect(result.data).toHaveLength(3);
     expect(result.data.map((model) => model.id)).toEqual([
-      "gpt-test-1",
-      "gpt-test-2",
-      "gpt-4o-mini-transcribe-2025-12-15",
+      "a-model",
+      "m-model",
+      "z-model",
     ]);
-    expect(result.data[0]).toEqual({
-      id: "gpt-test-1",
-      object: "model",
-      created: 1686935002,
-      owned_by: "openai",
-    });
+    expect(result.usedConfigFilter).toBe(false);
+    expect(result.showFallbackNote).toBe(true);
   });
 
-  it("does not annotate models with capability caveat fields", async () => {
+  it("filters models listed in config and returns non-fallback metadata", async () => {
+    await writeConfigFile(
+      JSON.stringify(
+        {
+          "models-with-error": ["gpt-image-1.5"],
+          "models-with-no-response": ["gpt-test-1"],
+          "other-models": ["gpt-extra"],
+        },
+        null,
+        2,
+      ),
+    );
+
     mockBody = {
       object: "list",
       data: [
@@ -221,17 +247,50 @@ describe("GET /api/models", () => {
       data: Array<{
         id: string;
       }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
     }>("/api/models");
 
     expect(result.object).toBe("list");
+    expect(result.data.map((model) => model.id)).toEqual([]);
+    expect(result.usedConfigFilter).toBe(true);
+    expect(result.showFallbackNote).toBe(false);
+  });
+
+  it("falls back to full alphabetical list when config JSON is malformed", async () => {
+    await writeConfigFile("{ malformed json");
+
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "model-b",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+        {
+          id: "model-a",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    const result = await $fetch<{
+      object: "list";
+      data: Array<{ id: string }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
+    }>("/api/models");
+
     expect(result.data.map((model) => model.id)).toEqual([
-      "gpt-test-1",
-      "gpt-image-1.5",
+      "model-a",
+      "model-b",
     ]);
-    expect(
-      "capabilityUnverified" in
-        (result.data.find((model) => model.id === "gpt-image-1.5") ?? {}),
-    ).toBe(false);
+    expect(result.usedConfigFilter).toBe(false);
+    expect(result.showFallbackNote).toBe(true);
   });
 
   it("does not call /responses while serving /api/models", async () => {

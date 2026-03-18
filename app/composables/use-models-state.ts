@@ -1,5 +1,5 @@
 import { ref, readonly, type Ref } from "vue";
-import type { OpenAIModel } from "~~/types/models";
+import type { ModelsResponse, OpenAIModel } from "~~/types/models";
 import { normalizeUiError } from "~/utils/error-normalization";
 import { logNormalizedUiError } from "~/utils/error-logging";
 
@@ -9,6 +9,8 @@ import { logNormalizedUiError } from "~/utils/error-logging";
 type ModelsState = {
   status: "idle" | "loading" | "success" | "error";
   data: ReadonlyArray<OpenAIModel> | null;
+  usedConfigFilter: boolean;
+  showFallbackNote: boolean;
   error: string | null;
   errorDetails: string | null;
 };
@@ -49,6 +51,8 @@ export const useModelsState = (): UseModelsStateReturn => {
   const state: Ref<ModelsState> = ref<ModelsState>({
     status: isSSR ? "idle" : "loading",
     data: null,
+    usedConfigFilter: false,
+    showFallbackNote: false,
     error: null,
     errorDetails: null,
   });
@@ -70,7 +74,7 @@ export const useModelsState = (): UseModelsStateReturn => {
     state.value.errorDetails = null;
 
     try {
-      const response = await $fetch<{ data: OpenAIModel[] }>("/api/models", {
+      const response = await $fetch<ModelsResponse>("/api/models", {
         signal: activeController.signal,
       });
 
@@ -80,6 +84,8 @@ export const useModelsState = (): UseModelsStateReturn => {
 
       state.value.status = "success";
       state.value.data = response.data;
+      state.value.usedConfigFilter = Boolean(response.usedConfigFilter);
+      state.value.showFallbackNote = Boolean(response.showFallbackNote);
       state.value.error = null;
       state.value.errorDetails = null;
     } catch (error) {
@@ -93,6 +99,8 @@ export const useModelsState = (): UseModelsStateReturn => {
 
       state.value.status = "error";
       state.value.data = null;
+      state.value.usedConfigFilter = false;
+      state.value.showFallbackNote = false;
 
       const normalizedError = normalizeUiError(error);
       logNormalizedUiError(normalizedError, { source: "models" });

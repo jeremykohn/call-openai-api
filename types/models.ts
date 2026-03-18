@@ -8,6 +8,8 @@ export type OpenAIModel = {
 export type ModelsResponse = {
   object: "list";
   data: OpenAIModel[] | ReadonlyArray<OpenAIModel>;
+  usedConfigFilter: boolean;
+  showFallbackNote: boolean;
 };
 
 export type ModelsErrorResponse = {

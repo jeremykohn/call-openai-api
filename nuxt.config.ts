@@ -12,9 +12,6 @@ export default defineNuxtConfig({
     openaiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
     openaiAllowedHosts: process.env.OPENAI_ALLOWED_HOSTS ?? "api.openai.com",
     openaiAllowInsecureHttp: process.env.OPENAI_ALLOW_INSECURE_HTTP ?? "false",
-    openaiAllowedModelsOverridesPath:
-      process.env.OPENAI_ALLOWED_MODELS_OVERRIDES_PATH ??
-      "server/config/allowed-models-overrides.json",
     openaiDisableModelsCache:
       process.env.OPENAI_DISABLE_MODELS_CACHE ?? "false",
   },

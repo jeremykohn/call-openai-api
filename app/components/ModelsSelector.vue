@@ -71,6 +71,16 @@
       is selected.
     </p>
 
+    <p
+      v-if="status !== 'loading' && showFallbackNote"
+      id="models-fallback-note"
+      class="text-xs text-slate-600"
+      data-testid="models-fallback-note"
+    >
+      Note: List of OpenAI models may include some older models that are no
+      longer available.
+    </p>
+
     <!-- Error Message -->
     <UiErrorAlert
       v-if="status === 'error' && error"
@@ -110,12 +120,17 @@ const props = defineProps<{
   errorDetails?: string | null;
   /** Whether the selection is required */
   required?: boolean;
+  /** Whether fallback mode is active for the models list */
+  showFallbackNote?: boolean;
 }>();
 
 const hasModels = computed(() => props.models.length > 0);
 
 const describedBy = computed(() => {
   const ids = ["models-select-help"];
+  if (props.showFallbackNote) {
+    ids.push("models-fallback-note");
+  }
   if (props.status === "error" && props.error) {
     ids.unshift("models-select-error");
   }

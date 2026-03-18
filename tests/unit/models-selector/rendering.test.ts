@@ -116,4 +116,36 @@ describe("ModelsSelector - Rendering", () => {
     expect(wrapper.text()).not.toContain("Availability unverified");
     expect(wrapper.text()).not.toContain("unverified availability");
   });
+
+  it("shows fallback note with exact text when fallback mode is active", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: mockModels,
+        selectedModelId: null,
+        status: "success",
+        showFallbackNote: true,
+      },
+    });
+
+    const fallbackNote = wrapper.find("[data-testid='models-fallback-note']");
+    expect(fallbackNote.exists()).toBe(true);
+    expect(fallbackNote.text()).toBe(
+      "Note: List of OpenAI models may include some older models that are no longer available.",
+    );
+  });
+
+  it("hides fallback note when fallback mode is inactive", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: mockModels,
+        selectedModelId: null,
+        status: "success",
+        showFallbackNote: false,
+      },
+    });
+
+    expect(wrapper.find("[data-testid='models-fallback-note']").exists()).toBe(
+      false,
+    );
+  });
 });

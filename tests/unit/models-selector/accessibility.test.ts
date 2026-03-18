@@ -121,6 +121,23 @@ describe("ModelsSelector - Accessibility", () => {
     );
   });
 
+  it("includes fallback note id in aria-describedby when note is shown", () => {
+    const wrapper = mount(ModelsSelector, {
+      props: {
+        models: mockModels,
+        selectedModelId: null,
+        status: "success",
+        showFallbackNote: true,
+      },
+    });
+
+    const select = wrapper.find("[data-testid='models-select']");
+    const describedBy = select.attributes("aria-describedby") ?? "";
+
+    expect(describedBy).toContain("models-select-help");
+    expect(describedBy).toContain("models-fallback-note");
+  });
+
   it("does not mark empty selection as an error in success state", () => {
     const wrapper = mount(ModelsSelector, {
       props: {
