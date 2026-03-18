@@ -18,7 +18,7 @@ import {
   readCachedModelsResponse,
   triggerCachedModelsBackgroundRefresh,
   writeCachedModelsResponse,
-} from "../utils/model-capability-models-cache";
+} from "../utils/models-response-cache";
 import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "models";

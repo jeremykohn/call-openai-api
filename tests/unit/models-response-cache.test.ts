@@ -3,13 +3,13 @@ import type { OpenAIModel } from "../../types/models";
 import {
   clearCachedModelsResponse,
   isModelsRefreshInFlight,
+  MODELS_RESPONSE_CACHE_TTL_MS,
   readCachedModelsResponse,
   triggerCachedModelsBackgroundRefresh,
   writeCachedModelsResponse,
-} from "../../server/utils/model-capability-models-cache";
-import { CAPABILITY_CACHE_TTL_MS } from "../../server/utils/model-capability";
+} from "../../server/utils/models-response-cache";
 
-describe("model capability models cache", () => {
+describe("models response cache", () => {
   const baseUrl = "https://api.openai.test/v1";
   const staleModels: OpenAIModel[] = [
     {
@@ -36,7 +36,7 @@ describe("model capability models cache", () => {
     writeCachedModelsResponse(
       baseUrl,
       staleModels,
-      now - CAPABILITY_CACHE_TTL_MS - 1,
+      now - MODELS_RESPONSE_CACHE_TTL_MS - 1,
     );
 
     const cached = readCachedModelsResponse(baseUrl, now);
@@ -50,7 +50,7 @@ describe("model capability models cache", () => {
     writeCachedModelsResponse(
       baseUrl,
       staleModels,
-      now - CAPABILITY_CACHE_TTL_MS - 1,
+      now - MODELS_RESPONSE_CACHE_TTL_MS - 1,
     );
 
     const staleRead = readCachedModelsResponse(baseUrl, now);

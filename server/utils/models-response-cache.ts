@@ -1,5 +1,6 @@
 import type { OpenAIModel } from "../../types/models";
-import { CAPABILITY_CACHE_TTL_MS } from "./model-capability";
+
+export const MODELS_RESPONSE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CachedModelsResponse = {
   cacheKey: string;
@@ -21,7 +22,8 @@ export const readCachedModelsResponse = (
     return null;
   }
 
-  const fresh = now - cachedModelsResponse.timestamp < CAPABILITY_CACHE_TTL_MS;
+  const fresh =
+    now - cachedModelsResponse.timestamp < MODELS_RESPONSE_CACHE_TTL_MS;
   return {
     models: cachedModelsResponse.models,
     fresh,
