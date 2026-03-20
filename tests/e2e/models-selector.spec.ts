@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { MODELS_FALLBACK_NOTE_TEXT } from "~~/shared/constants/models";
+
+// Keep in sync with MODELS_FALLBACK_NOTE_TEXT in shared/constants/models.ts
+// (guarded by tests/unit/models-constants.test.ts).
+const MODELS_FALLBACK_NOTE_TEXT =
+  "Note: List of OpenAI models may include some older models that are no longer available.";
 
 const mockModels = [
   { id: "gpt-4", created: 1686935002, owned_by: "openai" },
