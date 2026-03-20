@@ -8,7 +8,7 @@ import { captureEnvVars, ENV_KEYS } from "./helpers/env-restore";
 
 const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 const configFilePath = fileURLToPath(
-  new URL("../../server/config/models/openai-models.json", import.meta.url),
+  new URL("../../server/assets/models/openai-models.json", import.meta.url),
 );
 
 const env = captureEnvVars([...ENV_KEYS]);

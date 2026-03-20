@@ -9,8 +9,8 @@ Notes:
 
 ## Model list behavior
 
-- The server route `GET /api/models` proxies OpenAI's models API, then applies optional config-driven filtering from `server/config/models/openai-models.json`.
-- A sample config file is provided at `server/config/models/openai-models.json.example`.
+- The server route `GET /api/models` proxies OpenAI's models API, then applies optional config-driven filtering from `server/assets/models/openai-models.json`.
+- A sample config file is provided at `server/assets/models/openai-models.json.example`.
 - In config-valid mode, models listed in `models-with-error` and `models-with-no-response` are excluded from the dropdown.
 - In fallback mode (missing, unreadable, malformed, or invalid config), the dropdown includes the full upstream list and displays: `Note: List of OpenAI models may include some older models that are no longer available.`
 - The dropdown model list is sorted alphabetically in both config-valid and fallback modes.
