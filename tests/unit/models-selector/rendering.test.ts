@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import ModelsSelector from "~/components/ModelsSelector.vue";
+import { MODELS_FALLBACK_NOTE_TEXT } from "~~/shared/constants/models";
 import type { OpenAIModel } from "~~/types/models";
 
 /**
@@ -129,9 +130,7 @@ describe("ModelsSelector - Rendering", () => {
 
     const fallbackNote = wrapper.find("[data-testid='models-fallback-note']");
     expect(fallbackNote.exists()).toBe(true);
-    expect(fallbackNote.text()).toBe(
-      "Note: List of OpenAI models may include some older models that are no longer available.",
-    );
+    expect(fallbackNote.text()).toBe(MODELS_FALLBACK_NOTE_TEXT);
   });
 
   it("hides fallback note when fallback mode is inactive", () => {

@@ -77,8 +77,7 @@
       class="text-xs text-slate-600"
       data-testid="models-fallback-note"
     >
-      Note: List of OpenAI models may include some older models that are no
-      longer available.
+      {{ MODELS_FALLBACK_NOTE_TEXT }}
     </p>
 
     <!-- Error Message -->
@@ -101,7 +100,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { OpenAIModel } from "~~/types/models";
-import { DEFAULT_MODEL } from "~~/shared/constants/models";
+import {
+  DEFAULT_MODEL,
+  MODELS_FALLBACK_NOTE_TEXT,
+} from "~~/shared/constants/models";
 import UiErrorAlert from "./UiErrorAlert.vue";
 
 /**

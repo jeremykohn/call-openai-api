@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { MODELS_FALLBACK_NOTE_TEXT } from "~~/shared/constants/models";
 
 const mockModels = [
   { id: "gpt-4", created: 1686935002, owned_by: "openai" },
   { id: "gpt-3.5-turbo", created: 1677649963, owned_by: "openai" },
 ];
-
-const fallbackNoteText =
-  "Note: List of OpenAI models may include some older models that are no longer available.";
 
 test("loads models and allows selection", async ({ page }) => {
   await page.route("**/api/models", async (route) => {
@@ -191,7 +189,7 @@ test("valid config scenario hides fallback note and shows filtered alphabetical 
   ).toHaveCount(0);
 
   await expect(page.getByTestId("models-fallback-note")).toHaveCount(0);
-  await expect(page.getByText(fallbackNoteText)).toHaveCount(0);
+  await expect(page.getByText(MODELS_FALLBACK_NOTE_TEXT)).toHaveCount(0);
 });
 
 test("fallback scenario shows full alphabetical list and exact fallback note", async ({
@@ -229,6 +227,6 @@ test("fallback scenario shows full alphabetical list and exact fallback note", a
   await expect(options.nth(3)).toHaveText("gpt-3.5-turbo-instruct");
 
   await expect(page.getByTestId("models-fallback-note")).toHaveText(
-    fallbackNoteText,
+    MODELS_FALLBACK_NOTE_TEXT,
   );
 });
