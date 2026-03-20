@@ -1,0 +1,14 @@
+{
+  "models-with-error": [
+    "babbage-002",
+    "chatgpt-image-latest"
+  ],
+  "models-with-no-response": [
+    "gpt-3.5-turbo-instruct"
+  ],
+  "other-models": [
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-5.4"
+  ]
+}

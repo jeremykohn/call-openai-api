@@ -1,122 +1,130 @@
 import type { H3Event } from "h3";
 import { defineEventHandler, readBody, setResponseStatus } from "h3";
 import { useRuntimeConfig } from "nitropack/runtime";
-import type { ApiErrorResponse, ApiSuccessResponse, PromptRequest } from "../../types/chat";
-import { validatePrompt } from "../../app/utils/prompt-validation";
+import type {
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  PromptRequest,
+} from "~~/types/chat";
+import { validatePrompt } from "~~/app/utils/prompt-validation";
+import {
+  buildOpenAIErrorDetails,
+  buildOpenAIUrl,
+  isAllowedHost,
+  parseBooleanConfig,
+  parseAllowedHosts,
+  parseInvalidAllowedHosts,
+  sanitizeDetails,
+  validateOpenAIConfig,
+} from "../utils/openai-security";
+import {
+  extractOutputText,
+  parseOpenAIResponseBody,
+} from "../utils/openai-response-parser";
+import { resolveModel } from "../utils/openai-model-validation";
+import { HTTP_STATUS } from "../constants/http-status";
 
 const OPENAI_PATH = "responses";
-const DEFAULT_MODEL = "gpt-4.1-mini";
-
-type OpenAIResponse = {
-  output_text?: string;
-  output?: Array<{
-    content?: Array<{ text?: string }>;
-  }>;
-};
-
-type OpenAIErrorPayload = {
-  error?: {
-    message?: string;
-    type?: string;
-    code?: string;
-    param?: string;
-  };
-};
-
-const extractOutputText = (response: OpenAIResponse): string => {
-  if (response.output_text) {
-    return response.output_text;
-  }
-
-  const first = response.output?.[0]?.content?.[0]?.text;
-  return first ?? "";
-};
 
 export default defineEventHandler(async (event: H3Event) => {
   const body = await readBody<PromptRequest>(event);
   const validation = validatePrompt(body?.prompt ?? "");
 
   if (!validation.ok) {
-    setResponseStatus(event, 400);
+    setResponseStatus(event, HTTP_STATUS.BAD_REQUEST);
     return { message: validation.error } satisfies ApiErrorResponse;
   }
 
   const config = useRuntimeConfig();
-  const apiKey = config.openaiApiKey;
+  const apiKey = config.openaiApiKey?.trim?.();
   const baseUrl = config.openaiBaseUrl;
+  const allowedHosts = parseAllowedHosts(config.openaiAllowedHosts);
+  const invalidAllowedHosts = parseInvalidAllowedHosts(
+    config.openaiAllowedHosts,
+  );
+  const allowInsecureHttp = parseBooleanConfig(config.openaiAllowInsecureHttp);
 
-  if (!apiKey) {
-    setResponseStatus(event, 500);
-    return { message: "OpenAI API key is not configured." } satisfies ApiErrorResponse;
+  const configValidation = validateOpenAIConfig({
+    apiKey,
+    allowedHosts,
+    invalidAllowedHosts,
+  });
+
+  if (!configValidation.valid) {
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    return {
+      message: configValidation.reason,
+    } satisfies ApiErrorResponse;
   }
 
+  if (!isAllowedHost(baseUrl, allowedHosts, { allowInsecureHttp })) {
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    return {
+      message: "OpenAI base URL is not allowed.",
+    } satisfies ApiErrorResponse;
+  }
+
+  // Resolve model: validate if provided, use default if not
+  const modelResolution = await resolveModel(body.model, apiKey, baseUrl);
+  if ("error" in modelResolution) {
+    setResponseStatus(event, modelResolution.statusCode);
+    return { message: modelResolution.error } satisfies ApiErrorResponse;
+  }
+
+  const resolvedModel = modelResolution.model;
+
   try {
-    const requestUrl = (() => {
-      const url = new URL(baseUrl);
-      const normalizedPath = url.pathname.replace(/\/$/, "");
-      url.pathname = `${normalizedPath}/${OPENAI_PATH}`;
-      return url.toString();
-    })();
+    const requestUrl = buildOpenAIUrl(baseUrl, OPENAI_PATH);
 
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        input: validation.prompt
-      })
+        model: resolvedModel,
+        input: validation.prompt,
+      }),
     });
 
     const rawBody = await response.text();
-    let payload: OpenAIResponse & OpenAIErrorPayload = {};
-
-    if (rawBody) {
-      try {
-        payload = JSON.parse(rawBody) as OpenAIResponse & OpenAIErrorPayload;
-      } catch {
-        payload = {};
-      }
-    }
+    const payload = parseOpenAIResponseBody(rawBody);
 
     if (!response.ok) {
-      const requestId =
-        response.headers.get("x-request-id") ?? response.headers.get("x-openai-request-id");
-      const errorMessage = payload.error?.message;
-      const detailParts = [
-        errorMessage,
-        payload.error?.type ? `type: ${payload.error.type}` : undefined,
-        payload.error?.code ? `code: ${payload.error.code}` : undefined,
-        payload.error?.param ? `param: ${payload.error.param}` : undefined,
-        response.status ? `status: ${response.status}` : undefined,
-        response.statusText ? `statusText: ${response.statusText}` : undefined,
-        requestId ? `requestId: ${requestId}` : undefined,
-        !errorMessage && rawBody ? `response: ${rawBody.slice(0, 300)}` : undefined
-      ].filter(Boolean);
+      const details = buildOpenAIErrorDetails({
+        payload,
+        response,
+        rawBody,
+        apiKey,
+      });
 
-      setResponseStatus(event, response.status || 500);
+      setResponseStatus(
+        event,
+        response.status || HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      );
       return {
         message: "Request to OpenAI failed.",
-        details: detailParts.length ? detailParts.join(" | ") : undefined
+        details,
       } satisfies ApiErrorResponse;
     }
 
     const text = extractOutputText(payload);
 
     const result: ApiSuccessResponse = {
-      response: text
+      response: text,
+      model: resolvedModel,
     };
 
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : undefined;
+    const details = message ? sanitizeDetails(message, apiKey) : undefined;
 
-    setResponseStatus(event, 500);
+    setResponseStatus(event, HTTP_STATUS.INTERNAL_SERVER_ERROR);
     return {
       message: "Request to OpenAI failed.",
-      details: message
+      details,
     } satisfies ApiErrorResponse;
   }
 });

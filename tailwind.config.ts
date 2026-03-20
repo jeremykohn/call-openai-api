@@ -6,10 +6,10 @@ export default {
     "./components/**/*.{vue,js,ts}",
     "./layouts/**/*.{vue,js,ts}",
     "./pages/**/*.{vue,js,ts}",
-    "./server/**/*.{ts,js}"
+    "./server/**/*.{ts,js}",
   ],
   theme: {
-    extend: {}
+    extend: {},
   },
-  plugins: []
+  plugins: [],
 } satisfies Config;

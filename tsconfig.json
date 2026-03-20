@@ -3,5 +3,15 @@
   "compilerOptions": {
     "types": ["nuxt"]
   },
-  "include": ["app", "server", "tests", "types", "nuxt.config.ts", "playwright.config.ts", "vitest.config.ts", "vitest.unit.config.ts", "types/**/*.d.ts"]
+  "include": [
+    "app",
+    "server",
+    "tests",
+    "types",
+    "nuxt.config.ts",
+    "playwright.config.ts",
+    "vitest.config.ts",
+    "vitest.unit.config.ts",
+    "types/**/*.d.ts"
+  ]
 }
