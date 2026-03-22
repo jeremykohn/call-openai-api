@@ -10,6 +10,16 @@ const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 const configFilePath = fileURLToPath(
   new URL("../../server/assets/models/openai-models.json", import.meta.url),
 );
+const defaultConfigFileContent = JSON.stringify(
+  {
+    "available-models": [],
+    "models-with-error": ["beta-model"],
+    "models-with-no-response": [],
+    "other-models": [],
+  },
+  null,
+  2,
+);
 
 const env = captureEnvVars([...ENV_KEYS]);
 
@@ -89,7 +99,8 @@ beforeEach(async () => {
   await rm(configFilePath, { force: true });
 });
 
-afterAll(() => {
+afterAll(async () => {
+  await writeFile(configFilePath, `${defaultConfigFileContent}\n`, "utf-8");
   mockServer.close();
   env.restoreAll();
 });
@@ -100,6 +111,7 @@ describe("GET /api/models cache behavior with config filtering", () => {
       configFilePath,
       JSON.stringify(
         {
+          "available-models": [],
           "models-with-error": ["alpha-model"],
           "models-with-no-response": [],
           "other-models": [],
@@ -121,6 +133,7 @@ describe("GET /api/models cache behavior with config filtering", () => {
       configFilePath,
       JSON.stringify(
         {
+          "available-models": [],
           "models-with-error": ["beta-model"],
           "models-with-no-response": [],
           "other-models": [],

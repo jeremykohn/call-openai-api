@@ -10,6 +10,16 @@ const rootDir = fileURLToPath(new URL("../..", import.meta.url));
 const configFilePath = fileURLToPath(
   new URL("../../server/assets/models/openai-models.json", import.meta.url),
 );
+const defaultConfigFileContent = JSON.stringify(
+  {
+    "available-models": [],
+    "models-with-error": ["beta-model"],
+    "models-with-no-response": [],
+    "other-models": [],
+  },
+  null,
+  2,
+);
 
 // Must be captured before any process.env mutations below.
 const env = captureEnvVars([...ENV_KEYS]);
@@ -113,7 +123,8 @@ beforeEach(() => {
   resetMockServerState();
 });
 
-afterAll(() => {
+afterAll(async () => {
+  await writeFile(configFilePath, `${defaultConfigFileContent}\n`, "utf-8");
   mockServer.close();
   env.restoreAll();
 });
@@ -215,6 +226,7 @@ describe("GET /api/models", () => {
     await writeConfigFile(
       JSON.stringify(
         {
+          "available-models": ["gpt-extra"],
           "models-with-error": ["gpt-image-1.5"],
           "models-with-no-response": ["gpt-test-1"],
           "other-models": ["gpt-extra"],
@@ -253,6 +265,156 @@ describe("GET /api/models", () => {
 
     expect(result.object).toBe("list");
     expect(result.data.map((model) => model.id)).toEqual([]);
+    expect(result.usedConfigFilter).toBe(true);
+    expect(result.showFallbackNote).toBe(false);
+  });
+
+  it("does not exclude models that appear only in available-models", async () => {
+    await writeConfigFile(
+      JSON.stringify(
+        {
+          "available-models": ["gpt-test-1"],
+          "models-with-error": [],
+          "models-with-no-response": [],
+          "other-models": [],
+        },
+        null,
+        2,
+      ),
+    );
+
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "gpt-test-1",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+        {
+          id: "gpt-test-2",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    const result = await $fetch<{
+      data: Array<{ id: string }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
+    }>("/api/models");
+
+    expect(result.data.map((model) => model.id)).toEqual([
+      "gpt-test-1",
+      "gpt-test-2",
+    ]);
+    expect(result.usedConfigFilter).toBe(true);
+    expect(result.showFallbackNote).toBe(false);
+  });
+
+  it("does not exclude models that appear only in other-models", async () => {
+    await writeConfigFile(
+      JSON.stringify(
+        {
+          "available-models": [],
+          "models-with-error": [],
+          "models-with-no-response": [],
+          "other-models": ["gpt-test-1"],
+        },
+        null,
+        2,
+      ),
+    );
+
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "gpt-test-1",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+        {
+          id: "gpt-test-2",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    const result = await $fetch<{
+      data: Array<{ id: string }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
+    }>("/api/models");
+
+    expect(result.data.map((model) => model.id)).toEqual([
+      "gpt-test-1",
+      "gpt-test-2",
+    ]);
+    expect(result.usedConfigFilter).toBe(true);
+    expect(result.showFallbackNote).toBe(false);
+  });
+
+  it("excludes only models in models-with-error and models-with-no-response", async () => {
+    await writeConfigFile(
+      JSON.stringify(
+        {
+          "available-models": ["model-a"],
+          "models-with-error": ["model-b"],
+          "models-with-no-response": ["model-c"],
+          "other-models": ["model-d"],
+        },
+        null,
+        2,
+      ),
+    );
+
+    mockBody = {
+      object: "list",
+      data: [
+        {
+          id: "model-a",
+          object: "model",
+          created: 1686935001,
+          owned_by: "openai",
+        },
+        {
+          id: "model-b",
+          object: "model",
+          created: 1686935002,
+          owned_by: "openai",
+        },
+        {
+          id: "model-c",
+          object: "model",
+          created: 1686935003,
+          owned_by: "openai",
+        },
+        {
+          id: "model-d",
+          object: "model",
+          created: 1686935004,
+          owned_by: "openai",
+        },
+      ],
+    };
+
+    const result = await $fetch<{
+      data: Array<{ id: string }>;
+      usedConfigFilter: boolean;
+      showFallbackNote: boolean;
+    }>("/api/models");
+
+    expect(result.data.map((model) => model.id)).toEqual([
+      "model-a",
+      "model-d",
+    ]);
     expect(result.usedConfigFilter).toBe(true);
     expect(result.showFallbackNote).toBe(false);
   });

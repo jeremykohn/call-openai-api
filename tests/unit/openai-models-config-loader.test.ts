@@ -1,6 +1,6 @@
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadOpenAIModelsConfig } from "~~/server/utils/openai-models-config-loader";
 
@@ -31,6 +31,7 @@ describe("loadOpenAIModelsConfig", () => {
       configPath,
       JSON.stringify(
         {
+          "available-models": ["gpt-4.1"],
           "models-with-error": ["babbage-002"],
           "models-with-no-response": ["gpt-3.5-turbo-instruct"],
           "other-models": ["gpt-4.1"],
@@ -46,6 +47,7 @@ describe("loadOpenAIModelsConfig", () => {
     expect(result).toEqual({
       mode: "config-valid",
       config: {
+        "available-models": ["gpt-4.1"],
         "models-with-error": ["babbage-002"],
         "models-with-no-response": ["gpt-3.5-turbo-instruct"],
         "other-models": ["gpt-4.1"],
@@ -99,6 +101,7 @@ describe("loadOpenAIModelsConfig", () => {
     await writeFile(
       invalidFormatPath,
       JSON.stringify({
+        "available-models": ["gpt-4.1"],
         "models-with-error": ["babbage-002"],
         "models-with-no-response": "gpt-3.5-turbo-instruct",
         "other-models": ["gpt-4.1"],
@@ -113,5 +116,16 @@ describe("loadOpenAIModelsConfig", () => {
       reason: "invalid-format",
       details: "invalid-key-type",
     });
+  });
+
+  it("loads the repository sample config file from server/assets", async () => {
+    const configPath = resolve(
+      process.cwd(),
+      "server/assets/models/openai-models.json.example",
+    );
+
+    const result = await loadOpenAIModelsConfig(configPath);
+
+    expect(result.mode).toBe("config-valid");
   });
 });
