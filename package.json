@@ -18,7 +18,7 @@
     "test:a11y": "npm run test:a11y:unit && npm run test:a11y:e2e"
   },
   "dependencies": {
-    "nuxt": "^4.0.0"
+    "nuxt": "^4.4.2"
   },
   "overrides": {
     "serialize-javascript": "^7.0.4"
