@@ -27,7 +27,10 @@ export type OpenAIModelsConfigLoadResult =
 
 const readConfigTextFromStorage = async (
   storageKey: string,
-): Promise<{ ok: true; text: string } | { ok: false; reason: "missing-file" | "unreadable-file" }> => {
+): Promise<
+  | { ok: true; text: string }
+  | { ok: false; reason: "missing-file" | "unreadable-file" }
+> => {
   try {
     const { useStorage } = await import("nitropack/runtime");
     const storage = useStorage("assets:server");
@@ -46,7 +49,10 @@ const readConfigTextFromStorage = async (
 
 const readConfigTextFromAbsolutePath = async (
   absoluteConfigPath: string,
-): Promise<{ ok: true; text: string } | { ok: false; reason: "missing-file" | "unreadable-file" }> => {
+): Promise<
+  | { ok: true; text: string }
+  | { ok: false; reason: "missing-file" | "unreadable-file" }
+> => {
   try {
     const text = await readFile(absoluteConfigPath, "utf-8");
     return { ok: true, text };
