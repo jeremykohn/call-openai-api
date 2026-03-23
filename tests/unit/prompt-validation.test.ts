@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validatePrompt } from "../../app/utils/prompt-validation";
+import { validatePrompt } from "~/utils/prompt-validation";
 
 describe("validatePrompt", () => {
   it("rejects empty prompt", () => {
@@ -20,6 +20,16 @@ describe("validatePrompt", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.prompt).toBe("Hello, world!");
+    }
+  });
+
+  it("rejects prompts over the maximum length", () => {
+    const longPrompt = "a".repeat(4001);
+    const result = validatePrompt(longPrompt);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Prompt must be 4000 characters or fewer.");
     }
   });
 });
