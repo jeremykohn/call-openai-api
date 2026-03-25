@@ -1,5 +1,7 @@
 Write a complete, clear, and detailed **source specification** for this repository so that, with no additional context, a coder or coding agent can rebuild the same application with the same behavior, UX flow, UI layout, and styling.
 
+Save the source specification to `.github/spec/spec-for-entire-repo-v2.md`.
+
 ## Goal
 Produce a **single standalone spec document** that captures:
 - The app’s purpose and user value
