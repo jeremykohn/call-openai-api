@@ -8,6 +8,25 @@ SOURCE_REPO="call-openai-api"
 WORKSPACES_DIR="/workspaces"
 SOURCE="$WORKSPACES_DIR/$SOURCE_REPO"
 DEST="$WORKSPACES_DIR/$REPO_NAME"
+DEST_MODE="${DEST_MODE:-reuse-empty}" # Supported: new-only, reuse-empty
+USE_EXISTING_DEST=false
+
+is_dir_reusable_for_bootstrap() {
+  local dir="$1"
+  shopt -s dotglob nullglob
+  local entries=("$dir"/*)
+  shopt -u dotglob nullglob
+
+  if (( ${#entries[@]} == 0 )); then
+    return 0
+  fi
+
+  if (( ${#entries[@]} == 1 )) && [[ "${entries[0]}" == "$dir/.git" ]]; then
+    return 0
+  fi
+
+  return 1
+}
 
 if [[ ! -d "$SOURCE" ]]; then
   echo "❌ Source repo not found: $SOURCE"
@@ -15,17 +34,51 @@ if [[ ! -d "$SOURCE" ]]; then
 fi
 
 if [[ -e "$DEST" ]]; then
+  if [[ ! -d "$DEST" ]]; then
+    echo "❌ Destination exists but is not a directory: $DEST"
+    exit 1
+  fi
+
+  case "$DEST_MODE" in
+    new-only)
   echo "❌ Destination already exists: $DEST"
-  echo "   Remove it first or change REPO_NAME in this script."
+      echo "   Set DEST_MODE=reuse-empty to reuse an existing empty (or git-only) folder."
+      exit 1
+      ;;
+    reuse-empty)
+      if is_dir_reusable_for_bootstrap "$DEST"; then
+        USE_EXISTING_DEST=true
+        echo "==> Reusing existing destination: $DEST"
+      else
+        echo "❌ Destination is not reusable in DEST_MODE=reuse-empty: $DEST"
+        echo "   Folder must be empty or contain only .git"
+        exit 1
+      fi
+      ;;
+    *)
+      echo "❌ Invalid DEST_MODE: $DEST_MODE"
+      echo "   Supported values: new-only, reuse-empty"
   exit 1
+      ;;
+  esac
 fi
 
 # ---------------------------------------------------------------------------
 # 1. Scaffold new Nuxt 4 app
 # ---------------------------------------------------------------------------
 echo "==> Creating $REPO_NAME in $WORKSPACES_DIR ..."
+if [[ "$USE_EXISTING_DEST" == true ]]; then
+  TMP_DIR="$(mktemp -d)"
+  trap 'rm -rf "$TMP_DIR"' EXIT
+
+  cd "$TMP_DIR"
+  CI=1 npx --yes nuxi@latest init "$REPO_NAME" --template minimal --package-manager npm --no-install --no-gitInit --modules ""
+  rsync -a --exclude ".git" "$TMP_DIR/$REPO_NAME/" "$DEST/"
+else
 cd "$WORKSPACES_DIR"
-npx nuxi@latest init "$REPO_NAME" --package-manager npm --no-install --no-gitInit
+  CI=1 npx --yes nuxi@latest init "$REPO_NAME" --template minimal --package-manager npm --no-install --no-gitInit --modules ""
+fi
+
 cd "$DEST"
 git init
 git add -A
