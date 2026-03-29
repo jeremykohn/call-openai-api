@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Bootstrap script for compare-openai-models
 # Run from /workspaces: bash call-openai-api/scripts/bootstrap-new-repo.sh
+# This script does not create Git commits; commit changes manually.
 set -euo pipefail
 
 REPO_NAME="compare-openai-models"
@@ -41,7 +42,7 @@ if [[ -e "$DEST" ]]; then
 
   case "$DEST_MODE" in
     new-only)
-  echo "❌ Destination already exists: $DEST"
+      echo "❌ Destination already exists: $DEST"
       echo "   Set DEST_MODE=reuse-empty to reuse an existing empty (or git-only) folder."
       exit 1
       ;;
@@ -58,7 +59,7 @@ if [[ -e "$DEST" ]]; then
     *)
       echo "❌ Invalid DEST_MODE: $DEST_MODE"
       echo "   Supported values: new-only, reuse-empty"
-  exit 1
+      exit 1
       ;;
   esac
 fi
@@ -75,18 +76,16 @@ if [[ "$USE_EXISTING_DEST" == true ]]; then
   CI=1 npx --yes nuxi@latest init "$REPO_NAME" --template minimal --package-manager npm --no-install --no-gitInit --modules ""
   rsync -a --exclude ".git" "$TMP_DIR/$REPO_NAME/" "$DEST/"
 else
-cd "$WORKSPACES_DIR"
+  cd "$WORKSPACES_DIR"
   CI=1 npx --yes nuxi@latest init "$REPO_NAME" --template minimal --package-manager npm --no-install --no-gitInit --modules ""
 fi
 
 cd "$DEST"
-git init
-git add -A
-if git config user.name >/dev/null 2>&1 && git config user.email >/dev/null 2>&1; then
-  git commit -m "chore: scaffold Nuxt 4 app"
-else
-  echo "⚠️  Skipping initial commit (git user.name/user.email not configured)."
+if [[ ! -d .git ]]; then
+  git init
 fi
+echo "==> Git commit step skipped by design (manual commit required)."
+echo "==> Leaving changes unstaged by design (manual review/commit required)."
 
 # ---------------------------------------------------------------------------
 # 2. Write package.json (mirrors call-openai-api, name updated)
