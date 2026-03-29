@@ -92,7 +92,10 @@ PKGJSON
 # ---------------------------------------------------------------------------
 echo "==> Installing dependencies ..."
 npm install
-npx playwright install --with-deps chromium
+if ! npx playwright install --with-deps chromium; then
+  echo "⚠️  Playwright OS dependency install failed; falling back to browser-only install."
+  npx playwright install chromium
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Write toolchain config files
